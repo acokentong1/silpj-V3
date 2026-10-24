@@ -1,11 +1,64 @@
+
 @extends('v3.layout')
 @section('title','Pengaturan sekolah')
 @section('content')
 <p class="muted">Identitas dan kedua logo akan digunakan pada kop Kuitansi, Nopes, dan BAPB.</p>
-<form method="post" enctype="multipart/form-data" action="{{ route('v3.settings.save') }}">@csrf<fieldset style="border:0;padding:0" @disabled(!auth()->user()->isBendahara())><section class="card"><h2>Identitas dan penomoran</h2><div class="grid">
-@foreach(['nama_pemda'=>'Pemerintah daerah','nama_dinas'=>'Dinas','nama_sekolah'=>'Nama sekolah','npsn'=>'NPSN','tempat_cetak'=>'Tempat penerbitan','kode_surat'=>'Kode klasifikasi surat','kode_sekolah'=>'Kode sekolah untuk nomor dokumen'] as $f=>$label)<label>{{ $label }}<input name="{{ $f }}" value="{{ old($f,$s->$f) }}" required maxlength="255"></label>@endforeach
-<label class="wide">Alamat<textarea name="alamat" required maxlength="2000">{{ old('alamat',$s->alamat) }}</textarea></label></div></section>
-<section class="card"><h2>Logo kop surat</h2><div class="grid">@foreach(['logo_pemda'=>'Logo Pemda · kiri','logo_sekolah'=>'Logo sekolah · kanan'] as $f=>$label)<div><label>{{ $label }}<input type="file" name="{{ $f }}" accept=".png,.jpg,.jpeg"></label>@if($s->$f)<img class="logo-preview" src="{{ route('v3.logo',$f) }}" alt="{{ $label }}">@endif<small>PNG/JPG, maks. 2 MB dan 4000 × 4000 piksel.</small></div>@endforeach</div></section>
-<section class="card"><h2>Penandatangan</h2><div class="grid">@foreach(['kepala_sekolah'=>'Kepala sekolah','nip_kepala'=>'NIP kepala sekolah (opsional)','bendahara'=>'Bendahara','nip_bendahara'=>'NIP bendahara (opsional)','pemeriksa'=>'Pemeriksa barang','nip_pemeriksa'=>'NIP pemeriksa (opsional)'] as $f=>$label)<label>{{ $label }}<input name="{{ $f }}" value="{{ old($f,$s->$f) }}" @required(!str_starts_with($f,'nip')) maxlength="255"></label>@endforeach</div></section>@if(auth()->user()->isBendahara())<button>Simpan pengaturan</button>@endif</fieldset></form>
-<section class="card"><h2>Ganti kata sandi akun Anda</h2><form method="post" action="{{ route('password.update') }}">@csrf @method('PUT')<div class="grid"><label>Kata sandi saat ini<input type="password" name="current_password" autocomplete="current-password" required></label><label>Kata sandi baru<input type="password" name="password" autocomplete="new-password" minlength="8" required></label><label>Ulangi kata sandi baru<input type="password" name="password_confirmation" autocomplete="new-password" required></label></div>@foreach($errors->updatePassword->all() as $error)<p class="error">{{ $error }}</p>@endforeach<p><button>Perbarui kata sandi</button></p></form></section>
+<form method="post" enctype="multipart/form-data" action="{{ route('v3.settings.save') }}">
+@csrf
+<fieldset style="border:0;padding:0" @disabled(!auth()->user()->isBendahara())>
+<section class="card">
+<h2>Identitas dan penomoran</h2>
+<div class="grid">
+@foreach(['nama_pemda'=>'Pemerintah daerah','nama_dinas'=>'Dinas','nama_sekolah'=>'Nama sekolah','npsn'=>'NPSN','tempat_cetak'=>'Tempat penerbitan','kode_surat'=>'Kode klasifikasi surat','kode_sekolah'=>'Kode sekolah untuk nomor dokumen'] as $f=>$label)<label>{{ $label }}<input name="{{ $f }}" value="{{ old($f,$s->$f) }}" required maxlength="255">
+</label>
+@endforeach
+<label class="wide">Alamat<textarea name="alamat" required maxlength="2000">{{ old('alamat',$s->alamat) }}</textarea>
+</label>
+</div>
+</section>
+<section class="card">
+<h2>Logo kop surat</h2>
+<div class="grid">
+@foreach(['logo_pemda'=>'Logo Pemda · kiri','logo_sekolah'=>'Logo sekolah · kanan'] as $f=>$label)<div>
+<label>{{ $label }}<input type="file" name="{{ $f }}" accept=".png,.jpg,.jpeg">
+</label>
+@if($s->$f)<img class="logo-preview" src="{{ route('v3.logo',$f) }}" alt="{{ $label }}">
+@endif
+<small>PNG/JPG, maks. 2 MB dan 4000 × 4000 piksel.</small>
+</div>
+@endforeach
+</div>
+</section>
+<section class="card">
+<h2>Penandatangan</h2>
+<div class="grid">
+@foreach(['kepala_sekolah'=>'Kepala sekolah','nip_kepala'=>'NIP kepala sekolah (opsional)','bendahara'=>'Bendahara','nip_bendahara'=>'NIP bendahara (opsional)','pemeriksa'=>'Pemeriksa barang','nip_pemeriksa'=>'NIP pemeriksa (opsional)'] as $f=>$label)<label>{{ $label }}<input name="{{ $f }}" value="{{ old($f,$s->$f) }}" @required(!str_starts_with($f,'nip')) maxlength="255">
+</label>
+@endforeach
+</div>
+</section>
+@if(auth()->user()->isBendahara())<button>Simpan pengaturan</button>
+@endif
+</fieldset>
+</form>
+<section class="card">
+<h2>Ganti kata sandi akun Anda</h2>
+<form method="post" action="{{ route('password.update') }}">
+@csrf
+ 
+@method('PUT')<div class="grid">
+<label>Kata sandi saat ini<input type="password" name="current_password" autocomplete="current-password" required>
+</label>
+<label>Kata sandi baru<input type="password" name="password" autocomplete="new-password" minlength="8" required>
+</label>
+<label>Ulangi kata sandi baru<input type="password" name="password_confirmation" autocomplete="new-password" required>
+</label>
+</div>
+@foreach($errors->updatePassword->all() as $error)<p class="error">{{ $error }}</p>
+@endforeach
+<p>
+<button>Perbarui kata sandi</button>
+</p>
+</form>
+</section>
 @endsection

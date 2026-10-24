@@ -1,23 +1,214 @@
+
 <?php
  $school=$s['school'];$p=$s['purchase'];$vendor=$p['vendor'];$activity=$p['activity'];
  $rp=fn($v)=>'Rp'.number_format((float)$v,0,',','.');
  $date=\Carbon\Carbon::parse($doc->tanggal);
  $titles=['nopes'=>'NOTA PESANAN BARANG','bapb'=>'BERITA ACARA PEMERIKSAAN BARANG','kuitansi'=>'KUITANSI'];
 ?>
-<?php if($doc->status!=='terbit'): ?><div class="archive">ARSIP · <?php echo e(strtoupper($doc->status)); ?> · BUKAN DOKUMEN AKTIF</div><?php endif; ?>
-<table class="kop"><tr><td class="logo"><img src="<?php echo e($school['logo_pemda_data']); ?>" alt="Logo Pemda"></td><td><div class="gov"><?php echo e(mb_strtoupper($school['nama_pemda'])); ?><br><?php echo e(mb_strtoupper($school['nama_dinas'])); ?></div><strong><?php echo e(mb_strtoupper($school['nama_sekolah'])); ?></strong><div class="alamat"><?php echo e($school['alamat']); ?></div></td><td class="logo"><img src="<?php echo e($school['logo_sekolah_data']); ?>" alt="Logo Sekolah"></td></tr></table>
-<div class="title"><?php echo e($titles[$doc->jenis]); ?></div><p class="nomor">NOMOR: <?php echo e($doc->nomor); ?></p>
-<?php if($doc->jenis==='kuitansi'): ?>
-<table class="detail"><tr><td class="label">Sudah terima dari</td><td>: Bendahara <?php echo e($activity['budget']['sumber_dana']); ?> <?php echo e($school['nama_sekolah']); ?></td></tr><tr><td>Banyaknya uang (bruto)</td><td>: <?php echo e($rp($p['bruto'])); ?></td></tr><tr><td>Terbilang bruto</td><td>: <?php echo e(\App\Support\Terbilang::rupiah((int)$p['bruto'])); ?> rupiah</td></tr><tr><td>Untuk Pembayaran</td><td>: <?php echo e($activity['nama']); ?></td></tr><tr><td>Yang berhak menerima</td><td>: <?php echo e($vendor['nama']); ?> / <?php echo e($vendor['penerima']); ?></td></tr></table>
-<h4>RINCIAN PAJAK DAN KOMPONEN LAIN</h4><table class="items"><thead><tr><th>Komponen</th><th>Perlakuan</th><th>Nominal</th></tr></thead><tbody><?php $__empty_1 = true; $__currentLoopData = $p['components']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?><tr><td><?php echo e($c['label']); ?><?php if($c['metode']==='persentase'): ?><br><small><?php echo e((float)$c['persentase']); ?>% × <?php echo e($rp($c['dasar'])); ?></small><?php endif; ?></td><td><?php echo e(['tambah'=>'Penambah tagihan','potong'=>'Potongan pembayaran','termasuk'=>'Sudah termasuk harga'][$c['perlakuan']]); ?></td><td class="num"><?php echo e($rp($c['nominal'])); ?></td></tr><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?><tr><td colspan="3">Tidak ada komponen pajak atau komponen lain yang diinput.</td></tr><?php endif; ?><tr><td colspan="2">Total rincian pajak</td><td class="num"><?php echo e($rp($p['total_pajak'])); ?></td></tr><tr><td colspan="2">Total potongan pembayaran</td><td class="num"><?php echo e($rp($p['potongan'])); ?></td></tr><tr><td colspan="2"><strong>Diterima rekanan (netto)</strong></td><td class="num"><strong><?php echo e($rp($p['netto'])); ?></strong></td></tr></tbody></table><p>Terbilang netto: <?php echo e(\App\Support\Terbilang::rupiah((int)$p['netto'])); ?> rupiah</p>
-<?php else: ?>
-<?php if($doc->jenis==='nopes'): ?><p class="right">Kepada Yth.<br><?php echo e($vendor['nama']); ?><br><?php echo e($vendor['alamat']); ?></p><p>Sehubungan dengan kegiatan <strong><?php echo e($activity['nama']); ?></strong>, kami memesan barang/jasa dengan rincian berikut:</p><?php else: ?><p>Pada hari <?php echo e($date->translatedFormat('l')); ?>, tanggal <?php echo e($date->translatedFormat('d F Y')); ?>, telah dilakukan pemeriksaan barang untuk kegiatan <strong><?php echo e($activity['nama']); ?></strong> dari <?php echo e($vendor['nama']); ?>, berdasarkan Nota Pesanan <?php echo e($s['nopes_nomor']); ?>.</p><?php endif; ?>
-<table class="items"><thead><tr><th>No.</th><th>Nama barang</th><th>Volume</th><th>Satuan</th><th>Harga satuan</th><th>Jumlah</th></tr></thead><tbody><?php $__currentLoopData = $p['items']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><tr><td><?php echo e($item['urutan']); ?></td><td><?php echo e($item['nama']); ?></td><td class="num"><?php echo e((float)$item['volume']); ?></td><td><?php echo e($item['satuan']); ?></td><td class="num"><?php echo e($rp($item['harga'])); ?></td><td class="num"><?php echo e($rp($item['jumlah'])); ?></td></tr><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><tr><td colspan="5"><strong>Subtotal barang</strong></td><td class="num"><strong><?php echo e($rp($p['subtotal'])); ?></strong></td></tr><?php $__currentLoopData = $p['components']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><?php if($c['perlakuan']==='tambah'): ?><tr><td colspan="5"><?php echo e($c['label']); ?> (penambah)</td><td class="num"><?php echo e($rp($c['nominal'])); ?></td></tr><?php endif; ?>
-<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><tr><td colspan="5"><strong>Nilai bruto</strong></td><td class="num"><strong><?php echo e($rp($p['bruto'])); ?></strong></td></tr></tbody></table>
-<?php if($doc->jenis==='nopes'): ?><p>Pembayaran dibebankan pada dana <?php echo e($activity['budget']['sumber_dana']); ?> tahun anggaran <?php echo e($p['tahun']); ?>, setelah pemeriksaan dan penerimaan barang sesuai pesanan.</p><p>Demikian pesanan ini disampaikan. Atas kerja samanya, kami mengucapkan terima kasih.</p><?php else: ?><h4>HASIL PEMERIKSAAN</h4><table class="items"><thead><tr><th>Barang</th><th>Baik</th><th>Tidak baik</th><th>Satuan</th><th>Catatan</th></tr></thead><tbody><?php $__currentLoopData = $s['inspection']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><tr><td><?php echo e($row['nama']); ?></td><td><?php echo e((float)$row['baik']); ?></td><td><?php echo e((float)$row['rusak']); ?></td><td><?php echo e($row['satuan']); ?></td><td><?php echo e($row['catatan']); ?></td></tr><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></tbody></table><p>Hasil pemeriksaan dicatat sesuai keadaan barang pada tabel di atas. Berita acara ini dibuat untuk dipergunakan sebagaimana mestinya.</p><?php endif; ?>
+<?php if($doc->status!=='terbit'): ?><div class="archive">ARSIP · <?php echo e(strtoupper($doc->status)); ?> · BUKAN DOKUMEN AKTIF</div>
 <?php endif; ?>
-<?php if($s['catatan']): ?><p class="notes">Catatan: <?php echo e($s['catatan']); ?></p><?php endif; ?>
-<div class="no-break"><p class="right"><?php echo e($school['tempat_cetak']); ?>, <?php echo e($date->translatedFormat('d F Y')); ?><?php if($doc->jenis==='kuitansi'): ?><br>LUNAS BAYAR: <?php echo e(\Carbon\Carbon::parse($s['tanggal_lunas'])->translatedFormat('d F Y')); ?><?php endif; ?></p>
-<table class="sign"><tr><?php if($doc->jenis==='kuitansi'): ?><td>Penerima,<div class="space"></div><strong><?php echo e($vendor['penerima']); ?></strong><br><?php echo e($vendor['nama']); ?></td><td>Bendahara,<div class="space"></div><strong><?php echo e($school['bendahara']); ?></strong><?php if($school['nip_bendahara']): ?><br>NIP. <?php echo e($school['nip_bendahara']); ?><?php endif; ?></td><?php elseif($doc->jenis==='bapb'): ?><td>Pemeriksa,<div class="space"></div><strong><?php echo e($school['pemeriksa']); ?></strong><?php if($school['nip_pemeriksa']): ?><br>NIP. <?php echo e($school['nip_pemeriksa']); ?><?php endif; ?></td><?php else: ?><td></td><?php endif; ?><td>Kepala Sekolah,<div class="space"></div><strong><?php echo e($school['kepala_sekolah']); ?></strong><?php if($school['nip_kepala']): ?><br>NIP. <?php echo e($school['nip_kepala']); ?><?php endif; ?></td></tr></table></div>
+<table class="kop">
+<tr>
+<td class="logo">
+<img src="<?php echo e($school['logo_pemda_data']); ?>" alt="Logo Pemda">
+</td>
+<td>
+<div class="gov"><?php echo e(mb_strtoupper($school['nama_pemda'])); ?><br><?php echo e(mb_strtoupper($school['nama_dinas'])); ?></div>
+<strong><?php echo e(mb_strtoupper($school['nama_sekolah'])); ?></strong>
+<div class="alamat"><?php echo e($school['alamat']); ?></div>
+</td>
+<td class="logo">
+<img src="<?php echo e($school['logo_sekolah_data']); ?>" alt="Logo Sekolah">
+</td>
+</tr>
+</table>
+<div class="title"><?php echo e($titles[$doc->jenis]); ?></div>
+<p class="nomor">NOMOR: <?php echo e($doc->nomor); ?></p>
+<?php if($doc->jenis==='kuitansi'): ?>
+<table class="detail">
+<tr>
+<td class="label">Sudah terima dari</td>
+<td>: Bendahara <?php echo e($activity['budget']['sumber_dana']); ?> <?php echo e($school['nama_sekolah']); ?></td>
+</tr>
+<tr>
+<td>Banyaknya uang (bruto)</td>
+<td>: <?php echo e($rp($p['bruto'])); ?></td>
+</tr>
+<tr>
+<td>Terbilang bruto</td>
+<td>: <?php echo e(\App\Support\Terbilang::rupiah((int)$p['bruto'])); ?> rupiah</td>
+</tr>
+<tr>
+<td>Untuk Pembayaran</td>
+<td>: <?php echo e($activity['nama']); ?></td>
+</tr>
+<tr>
+<td>Yang berhak menerima</td>
+<td>: <?php echo e($vendor['nama']); ?> / <?php echo e($vendor['penerima']); ?></td>
+</tr>
+</table>
+<h4>RINCIAN PAJAK DAN KOMPONEN LAIN</h4>
+<table class="items">
+<thead>
+<tr>
+<th>Komponen</th>
+<th>Perlakuan</th>
+<th>Nominal</th>
+</tr>
+</thead>
+<tbody>
+<?php $__empty_1 = true; $__currentLoopData = $p['components']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?><tr>
+<td><?php echo e($c['label']); ?>
+
+<?php if($c['metode']==='persentase'): ?><br>
+<small><?php echo e((float)$c['persentase']); ?>% × <?php echo e($rp($c['dasar'])); ?></small>
+<?php endif; ?>
+</td>
+<td><?php echo e(['tambah'=>'Penambah tagihan','potong'=>'Potongan pembayaran','termasuk'=>'Sudah termasuk harga'][$c['perlakuan']]); ?></td>
+<td class="num"><?php echo e($rp($c['nominal'])); ?></td>
+</tr>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?><tr>
+<td colspan="3">Tidak ada komponen pajak atau komponen lain yang diinput.</td>
+</tr>
+<?php endif; ?>
+<tr>
+<td colspan="2">Total rincian pajak</td>
+<td class="num"><?php echo e($rp($p['total_pajak'])); ?></td>
+</tr>
+<tr>
+<td colspan="2">Total potongan pembayaran</td>
+<td class="num"><?php echo e($rp($p['potongan'])); ?></td>
+</tr>
+<tr>
+<td colspan="2">
+<strong>Diterima rekanan (netto)</strong>
+</td>
+<td class="num">
+<strong><?php echo e($rp($p['netto'])); ?></strong>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Terbilang netto: <?php echo e(\App\Support\Terbilang::rupiah((int)$p['netto'])); ?> rupiah</p>
+<?php else: ?>
+<?php if($doc->jenis==='nopes'): ?><p class="right">Kepada Yth.<br><?php echo e($vendor['nama']); ?><br><?php echo e($vendor['alamat']); ?></p>
+<p>Sehubungan dengan kegiatan <strong><?php echo e($activity['nama']); ?></strong>, kami memesan barang/jasa dengan rincian berikut:</p>
+<?php else: ?><p>Pada hari <?php echo e($date->translatedFormat('l')); ?>, tanggal <?php echo e($date->translatedFormat('d F Y')); ?>, telah dilakukan pemeriksaan barang untuk kegiatan <strong><?php echo e($activity['nama']); ?></strong> dari <?php echo e($vendor['nama']); ?>, berdasarkan Nota Pesanan <?php echo e($s['nopes_nomor']); ?>.</p>
+<?php endif; ?>
+<table class="items">
+<thead>
+<tr>
+<th>No.</th>
+<th>Nama barang</th>
+<th>Volume</th>
+<th>Satuan</th>
+<th>Harga satuan</th>
+<th>Jumlah</th>
+</tr>
+</thead>
+<tbody>
+<?php $__currentLoopData = $p['items']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><tr>
+<td><?php echo e($item['urutan']); ?></td>
+<td><?php echo e($item['nama']); ?></td>
+<td class="num"><?php echo e((float)$item['volume']); ?></td>
+<td><?php echo e($item['satuan']); ?></td>
+<td class="num"><?php echo e($rp($item['harga'])); ?></td>
+<td class="num"><?php echo e($rp($item['jumlah'])); ?></td>
+</tr>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+<tr>
+<td colspan="5">
+<strong>Subtotal barang</strong>
+</td>
+<td class="num">
+<strong><?php echo e($rp($p['subtotal'])); ?></strong>
+</td>
+</tr>
+<?php $__currentLoopData = $p['components']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+<?php if($c['perlakuan']==='tambah'): ?><tr>
+<td colspan="5"><?php echo e($c['label']); ?> (penambah)</td>
+<td class="num"><?php echo e($rp($c['nominal'])); ?></td>
+</tr>
+<?php endif; ?>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+<tr>
+<td colspan="5">
+<strong>Nilai bruto</strong>
+</td>
+<td class="num">
+<strong><?php echo e($rp($p['bruto'])); ?></strong>
+</td>
+</tr>
+</tbody>
+</table>
+<?php if($doc->jenis==='nopes'): ?><p>Pembayaran dibebankan pada dana <?php echo e($activity['budget']['sumber_dana']); ?> tahun anggaran <?php echo e($p['tahun']); ?>, setelah pemeriksaan dan penerimaan barang sesuai pesanan.</p>
+<p>Demikian pesanan ini disampaikan. Atas kerja samanya, kami mengucapkan terima kasih.</p>
+<?php else: ?><h4>HASIL PEMERIKSAAN</h4>
+<table class="items">
+<thead>
+<tr>
+<th>Barang</th>
+<th>Baik</th>
+<th>Tidak baik</th>
+<th>Satuan</th>
+<th>Catatan</th>
+</tr>
+</thead>
+<tbody>
+<?php $__currentLoopData = $s['inspection']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><tr>
+<td><?php echo e($row['nama']); ?></td>
+<td><?php echo e((float)$row['baik']); ?></td>
+<td><?php echo e((float)$row['rusak']); ?></td>
+<td><?php echo e($row['satuan']); ?></td>
+<td><?php echo e($row['catatan']); ?></td>
+</tr>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+</tbody>
+</table>
+<p>Hasil pemeriksaan dicatat sesuai keadaan barang pada tabel di atas. Berita acara ini dibuat untuk dipergunakan sebagaimana mestinya.</p>
+<?php endif; ?>
+<?php endif; ?>
+<?php if($s['catatan']): ?><p class="notes">Catatan: <?php echo e($s['catatan']); ?></p>
+<?php endif; ?>
+<div class="no-break">
+<p class="right"><?php echo e($school['tempat_cetak']); ?>, <?php echo e($date->translatedFormat('d F Y')); ?>
+
+<?php if($doc->jenis==='kuitansi'): ?><br>LUNAS BAYAR: <?php echo e(\Carbon\Carbon::parse($s['tanggal_lunas'])->translatedFormat('d F Y')); ?>
+
+<?php endif; ?>
+</p>
+<table class="sign">
+<tr>
+<?php if($doc->jenis==='kuitansi'): ?><td>Penerima,<div class="space">
+</div>
+<strong><?php echo e($vendor['penerima']); ?></strong>
+<br><?php echo e($vendor['nama']); ?></td>
+<td>Bendahara,<div class="space">
+</div>
+<strong><?php echo e($school['bendahara']); ?></strong>
+<?php if($school['nip_bendahara']): ?><br>NIP. <?php echo e($school['nip_bendahara']); ?>
+
+<?php endif; ?>
+</td>
+<?php elseif($doc->jenis==='bapb'): ?><td>Pemeriksa,<div class="space">
+</div>
+<strong><?php echo e($school['pemeriksa']); ?></strong>
+<?php if($school['nip_pemeriksa']): ?><br>NIP. <?php echo e($school['nip_pemeriksa']); ?>
+
+<?php endif; ?>
+</td>
+<?php else: ?><td>
+</td>
+<?php endif; ?>
+<td>Kepala Sekolah,<div class="space">
+</div>
+<strong><?php echo e($school['kepala_sekolah']); ?></strong>
+<?php if($school['nip_kepala']): ?><br>NIP. <?php echo e($school['nip_kepala']); ?>
+
+<?php endif; ?>
+</td>
+</tr>
+</table>
+</div>
 <p class="footer">SILPJ V3 · Versi dokumen <?php echo e($doc->versi); ?> · Revisi transaksi <?php echo e($doc->revision); ?></p>
 <?php /**PATH D:\04 DATA ACO\S8\Capstone Project\silpj-V3\resources\views/v3/print-document.blade.php ENDPATH**/ ?>

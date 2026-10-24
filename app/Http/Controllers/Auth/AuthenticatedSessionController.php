@@ -32,6 +32,7 @@ class AuthenticatedSessionController extends Controller
         // intended school dashboard URL after login.
         if ($request->user()->isSystemAdmin()) {
             $request->session()->forget('url.intended');
+
             return redirect()->route('system.schools');
         }
 

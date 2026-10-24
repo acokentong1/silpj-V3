@@ -16,18 +16,19 @@ class ApprovalController extends Controller
             'status' => ['nullable', Rule::in(['diajukan', 'disetujui', 'revisi'])],
             'tahun' => ['nullable', 'integer', 'between:2000,2100'],
             'q' => ['nullable', 'string', 'max:100'],
+            'sort' => ['nullable', Rule::in(['oldest', 'newest'])],
         ]);
         $status = $filters['status'] ?? 'diajukan';
         $base = Purchase::where('school_profile_id', $schoolId);
         $years = (clone $base)->distinct()->orderByDesc('tahun')->pluck('tahun');
-        if (!empty($filters['tahun'])) {
+        if (! empty($filters['tahun'])) {
             $base->where('tahun', $filters['tahun']);
         }
         // Summary is scoped to the school/year, independent of the search term.
         $counts = (clone $base)->selectRaw('status, count(*) as total')
             ->groupBy('status')->pluck('total', 'status');
         $query = (clone $base)->where('status', $status)->with('activity.budget', 'vendor');
-        if (!empty($filters['q'])) {
+        if (! empty($filters['q'])) {
             $term = '%'.$filters['q'].'%';
             $query->where(function ($q) use ($term) {
                 $q->where('nomor_bukti', 'like', $term)
@@ -35,7 +36,8 @@ class ApprovalController extends Controller
                     ->orWhereHas('vendor', fn ($v) => $v->where('nama', 'like', $term));
             });
         }
-        $purchases = $query->orderBy('id')->paginate(15)->withQueryString();
+        $purchases = $query->orderByRaw('submitted_at IS NULL')->orderBy('submitted_at', ($filters['sort'] ?? 'oldest') === 'newest' ? 'desc' : 'asc')->orderBy('id')->paginate(15)->withQueryString();
+
         return view('v3.approvals', compact('purchases', 'years', 'counts', 'status'));
     }
 }

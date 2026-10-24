@@ -13,6 +13,7 @@ class RedirectToInitialSetup
         if ($request->is('/', 'login', 'register') && app(InitialSetup::class)->needed()) {
             return redirect()->route('setup.create');
         }
+
         return $next($request);
     }
 }

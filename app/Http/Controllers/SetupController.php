@@ -11,9 +11,10 @@ class SetupController extends Controller
 {
     public function create(InitialSetup $setup)
     {
-        if (!$setup->needed()) {
+        if (! $setup->needed()) {
             return redirect()->route('login')->with('status', 'Pengaturan awal tidak tersedia. Gunakan akun yang sudah ada.');
         }
+
         return view('setup.create');
     }
 
@@ -31,6 +32,7 @@ class SetupController extends Controller
         $user = $setup->complete($data);
         Auth::login($user);
         $request->session()->regenerate();
+
         return redirect()->route('admin.users.create')->with('success', 'Sekolah dan admin siap. Sekarang tambahkan akun bendahara dan kepala sekolah.');
     }
 }

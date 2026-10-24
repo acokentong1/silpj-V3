@@ -2,25 +2,114 @@
 <?php $__env->startSection('content'); ?>
 <?php ($edit=$p->editable()&&auth()->user()->isBendahara()); ?>
 <?php if(auth()->user()->isKepalaSekolah()): ?>
-<p><a class="button secondary" href="<?php echo e(route('v3.approvals')); ?>">← Kembali ke daftar persetujuan</a></p>
+<p>
+<a class="button secondary" href="<?php echo e(route('v3.approvals')); ?>">← Kembali ke daftar persetujuan</a>
+</p>
 <div class="review-instruction">Periksa rincian belanja, dokumen, dan bukti transaksi di bawah sebelum memberikan keputusan.</div>
 <?php echo $__env->make('v3.partials.review-actions', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 <?php endif; ?>
 
-<p><a href="<?php echo e(route('v3.activity',$p->activity_id)); ?>">← <?php echo e($p->activity->nama); ?></a> · <span class="badge <?php echo e($p->status); ?>"><?php echo e($p->status); ?></span></p>
-<?php if(!$p->editable()): ?><div class="locked">🔒 Transaksi terkunci · <?php echo e($p->status); ?>. Data dan dokumen tidak dapat diubah.</div><?php endif; ?>
-<section class="card"><div class="between"><div><h2><?php echo e($p->vendor->nama); ?></h2><span><?php echo e($p->vendor->alamat); ?> · Penerima: <?php echo e($p->vendor->penerima); ?></span><p class="muted"><?php echo e($p->tanggal); ?> · <?php echo e($p->activity->budget->sumber_dana); ?> <?php echo e($p->tahun); ?> · Revisi data <?php echo e($p->revision); ?></p></div><?php if($edit): ?><a class="button secondary" href="<?php echo e(route('v3.edit',[$p->activity_id,$p->id])); ?>">Ubah transaksi</a><?php endif; ?></div>
-<div class="table-wrap"><table><thead><tr><th>Barang</th><th>Volume</th><th>Satuan</th><th class="number">Harga</th><th class="number">Jumlah</th></tr></thead><tbody><?php $__currentLoopData = $p->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><tr><td><?php echo e($item->nama); ?></td><td><?php echo e((float)$item->volume); ?></td><td><?php echo e($item->satuan); ?></td><td class="number">Rp<?php echo e(number_format($item->harga,0,',','.')); ?></td><td class="number">Rp<?php echo e(number_format($item->jumlah,0,',','.')); ?></td></tr><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></tbody></table></div>
-<?php if($p->components->count()): ?><h3>Pajak & komponen lain</h3><div class="table-wrap"><table><thead><tr><th>Komponen</th><th>Perhitungan</th><th>Perlakuan</th><th class="number">Nominal</th></tr></thead><tbody><?php $__currentLoopData = $p->components; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><tr><td><?php echo e($c->label); ?> <small>(<?php echo e($c->kategori); ?>)</small></td><td><?php echo e($c->metode==='persentase'?((float)$c->persentase.'% × Rp'.number_format($c->dasar,0,',','.')):'Nominal manual'); ?></td><td><?php echo e(['termasuk'=>'Sudah termasuk','tambah'=>'Penambah','potong'=>'Potongan'][$c->perlakuan]); ?></td><td class="number">Rp<?php echo e(number_format($c->nominal,0,',','.')); ?></td></tr><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></tbody></table></div><?php endif; ?>
-<div class="total-box"><?php $__currentLoopData = ['subtotal'=>'Subtotal','bruto'=>'Nilai bruto','potongan'=>'Potongan','netto'=>'Diterima rekanan']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key=>$label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><div class="<?php echo e($key==='netto'?'grand':''); ?>"><span><?php echo e($label); ?></span><strong>Rp<?php echo e(number_format($p->$key,0,',','.')); ?></strong></div><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></div></section>
+<p>
+<a href="<?php echo e(route('v3.activity',$p->activity_id)); ?>">← <?php echo e($p->activity->nama); ?></a> · <span class="badge <?php echo e($p->status); ?>"><?php echo e($p->status); ?></span>
+</p>
+<?php if(!$p->editable()): ?><div class="locked">🔒 Transaksi terkunci · <?php echo e($p->status); ?>. Data dan dokumen tidak dapat diubah.</div>
+<?php endif; ?>
+<section class="card">
+<div class="between">
+<div>
+<h2><?php echo e($p->vendor->nama); ?></h2>
+<span><?php echo e($p->vendor->alamat); ?> · Penerima: <?php echo e($p->vendor->penerima); ?></span>
+<p class="muted"><?php echo e($p->tanggal); ?> · <?php echo e($p->activity->budget->sumber_dana); ?> <?php echo e($p->tahun); ?> · Revisi data <?php echo e($p->revision); ?></p>
+</div>
+<?php if($edit): ?><a class="button secondary" href="<?php echo e(route('v3.edit',[$p->activity_id,$p->id])); ?>">Ubah transaksi</a>
+<?php endif; ?>
+</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Barang</th>
+<th>Volume</th>
+<th>Satuan</th>
+<th class="number">Harga</th>
+<th class="number">Jumlah</th>
+</tr>
+</thead>
+<tbody>
+<?php $__currentLoopData = $p->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><tr>
+<td><?php echo e($item->nama); ?></td>
+<td><?php echo e((float)$item->volume); ?></td>
+<td><?php echo e($item->satuan); ?></td>
+<td class="number">Rp<?php echo e(number_format($item->harga,0,',','.')); ?></td>
+<td class="number">Rp<?php echo e(number_format($item->jumlah,0,',','.')); ?></td>
+</tr>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+</tbody>
+</table>
+</div>
+<?php if($p->components->count()): ?><h3>Pajak & komponen lain</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Komponen</th>
+<th>Perhitungan</th>
+<th>Perlakuan</th>
+<th class="number">Nominal</th>
+</tr>
+</thead>
+<tbody>
+<?php $__currentLoopData = $p->components; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><tr>
+<td><?php echo e($c->label); ?> <small>(<?php echo e($c->kategori); ?>)</small>
+</td>
+<td><?php echo e($c->metode==='persentase'?((float)$c->persentase.'% × Rp'.number_format($c->dasar,0,',','.')):'Nominal manual'); ?></td>
+<td><?php echo e(['termasuk'=>'Sudah termasuk','tambah'=>'Penambah','potong'=>'Potongan'][$c->perlakuan]); ?></td>
+<td class="number">Rp<?php echo e(number_format($c->nominal,0,',','.')); ?></td>
+</tr>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+</tbody>
+</table>
+</div>
+<?php endif; ?>
+<div class="total-box">
+<?php $__currentLoopData = ['subtotal'=>'Subtotal','bruto'=>'Nilai bruto','potongan'=>'Potongan','netto'=>'Diterima rekanan']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key=>$label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><div class="<?php echo e($key==='netto'?'grand':''); ?>">
+<span><?php echo e($label); ?></span>
+<strong>Rp<?php echo e(number_format($p->$key,0,',','.')); ?></strong>
+</div>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+</div>
+</section>
+<?php echo $__env->make('v3.partials.receipts', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 <?php echo $__env->make('v3.partials.transaction-documents', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
-<section class="card"><h2>Bukti transaksi</h2><?php $__empty_1 = true; $__currentLoopData = $attachments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $f): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?><p><a href="<?php echo e(route('v3.attachment',$f->id)); ?>"><?php echo e($f->name); ?></a> <small><?php echo e($f->created_at); ?></small></p><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?><p class="muted">Unggah nota atau bukti pendukung sebelum mengajukan LPJ.</p><?php endif; ?>
-<?php if($edit): ?><form class="actions" method="post" enctype="multipart/form-data" action="<?php echo e(route('v3.upload',$p->id)); ?>"><?php echo csrf_field(); ?><input aria-label="Bukti transaksi" type="file" name="file" accept=".pdf,.png,.jpg,.jpeg" required><button>Unggah bukti</button><small>PDF, PNG, JPG · Maks. 10 MB</small></form><?php endif; ?></section>
+<section class="card">
+<h2>Bukti transaksi</h2>
+<?php $__empty_1 = true; $__currentLoopData = $attachments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $f): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?><p>
+<a href="<?php echo e(route('v3.attachment',$f->id)); ?>"><?php echo e($f->name); ?></a> <small><?php echo e($f->created_at); ?></small>
+</p>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?><p class="muted">Unggah nota atau bukti pendukung sebelum mengajukan LPJ.</p>
+<?php endif; ?>
+<?php if($edit): ?><form class="actions" method="post" enctype="multipart/form-data" action="<?php echo e(route('v3.upload',$p->id)); ?>">
+<?php echo csrf_field(); ?>
+<input aria-label="Bukti transaksi" type="file" name="file" accept=".pdf,.png,.jpg,.jpeg" required>
+<button>Unggah bukti</button>
+<small>PDF, PNG, JPG · Maks. 10 MB</small>
+</form>
+<?php endif; ?>
+</section>
 <?php if(!auth()->user()->isKepalaSekolah()): ?>
 <?php echo $__env->make('v3.partials.review-actions', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 <?php endif; ?>
 <section class="card">
-<h3>Riwayat perubahan</h3><?php $__currentLoopData = $events; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $e): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><p><strong><?php echo e(str_replace('_',' ',$e->action)); ?></strong> · <?php echo e($e->name); ?> <small><?php echo e($e->created_at); ?></small><?php if($e->reason): ?><br><?php echo e($e->reason); ?><?php endif; ?></p><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></section>
+<h3>Riwayat perubahan</h3>
+<?php $__currentLoopData = $events; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $e): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><p>
+<strong><?php echo e(str_replace('_',' ',$e->action)); ?></strong> · <?php echo e($e->name); ?> <small><?php echo e($e->created_at); ?></small>
+<?php if($e->reason): ?><br><?php echo e($e->reason); ?>
+
+<?php endif; ?>
+</p>
+<?php echo $__env->make('v3.partials.revision-diff', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+</section>
 <?php $__env->stopSection(); ?>
 
 <?php echo $__env->make('v3.layout', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\04 DATA ACO\S8\Capstone Project\silpj-V3\resources\views/v3/purchase.blade.php ENDPATH**/ ?>

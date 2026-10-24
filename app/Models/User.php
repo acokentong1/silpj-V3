@@ -52,7 +52,7 @@ class User extends Authenticatable
 
     public function isKepalaSekolah(): bool
     {
-        return in_array($this->role, ['kepala_sekolah', 'admin']);
+        return $this->role === 'kepala_sekolah';
     }
 
     public function isActive(): bool
