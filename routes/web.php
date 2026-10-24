@@ -25,7 +25,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [Auth::class, 'store']);
 });
 Route::post('/logout', [Auth::class, 'destroy'])->middleware('auth')->name('logout');
-Route::middleware(['auth', 'active', 'school.active'])->group(function () {
+Route::middleware(['auth', 'session.version', 'active', 'school.active'])->group(function () {
     Route::get('/dashboard', [V::class, 'index'])->name('dashboard');
     Route::get('/persetujuan', [ApprovalController::class, 'index'])->name('v3.approvals');
     Route::post('/kegiatan', [ActivityController::class, 'activityStore'])->name('v3.activity.store');
@@ -56,12 +56,20 @@ Route::middleware(['auth', 'active', 'school.active'])->group(function () {
     Route::patch('/akun/{id}', [AccountController::class, 'accountUpdate'])->whereNumber('id')->name('v3.accounts.update');
     Route::put('/password', [PasswordController::class, 'update'])->name('password.update');
     Route::get('/laporan', [ReportController::class, 'reports'])->name('v3.reports');
+    Route::post('/bukti/{id}/status', [\App\Http\Controllers\OperationsController::class,'evidence'])->whereNumber('id')->name('v3.evidence');
+    Route::post('/penerimaan/{id}/batalkan', [\App\Http\Controllers\OperationsController::class,'cancelReceipt'])->whereNumber('id')->name('v3.receipts.cancel');
+    Route::patch('/kegiatan/{id}', [\App\Http\Controllers\OperationsController::class,'activity'])->whereNumber('id')->name('v3.activity.update');
+    Route::get('/audit', [\App\Http\Controllers\OperationsController::class,'audit'])->name('v3.audit');
+    Route::get('/notifikasi', [\App\Http\Controllers\OperationsController::class,'notices'])->name('v3.notices');
+    Route::post('/notifikasi/{id}', [\App\Http\Controllers\OperationsController::class,'readNotice'])->whereNumber('id')->name('v3.notices.read');
+    Route::get('/rekanan', [\App\Http\Controllers\OperationsController::class,'vendors'])->name('v3.vendors');
+    Route::get('/lpj-final.pdf', [\App\Http\Controllers\FinalReportController::class,'download'])->name('v3.final');
     Route::get('/laporan.xlsx', [ReportController::class, 'excel'])->name('v3.excel');
     Route::get('/laporan.csv', [ReportController::class, 'csv'])->name('v3.csv');
 
 });
 
-Route::middleware(['auth', 'active'])->group(function () {
+Route::middleware(['auth', 'session.version', 'active'])->group(function () {
     Route::get('/sistem/sekolah', [SchoolAdminController::class, 'index'])->name('system.schools');
     Route::post('/sistem/sekolah', [SchoolAdminController::class, 'store'])->middleware('throttle:10,1')->name('system.schools.store');
     Route::patch('/sistem/sekolah/{school}', [SchoolAdminController::class, 'update'])->whereNumber('school')->name('system.schools.update');

@@ -21,7 +21,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Carbon::setLocale('id');
-        if (! app()->environment('testing')) {
+        if (! app()->environment('testing') && !(PHP_SAPI==='cli' && defined('SILPJ_EMERGENCY_RESTORE') && SILPJ_EMERGENCY_RESTORE)) {
             $path = database_path('silpj-v3.sqlite');
             if (is_link($path) || (file_exists($path) && realpath($path) !== realpath(database_path()).DIRECTORY_SEPARATOR.'silpj-v3.sqlite')) {
                 throw new \RuntimeException('Database V3 harus berupa berkas lokal khusus, bukan tautan.');

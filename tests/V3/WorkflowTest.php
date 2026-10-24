@@ -47,7 +47,7 @@ class WorkflowTest extends TestCase
 
     private function payload(): array
     {
-        return ['nomor_bukti' => 'B-001', 'tanggal' => '2026-01-19', 'kategori' => 'Barang', 'vendor_nama' => 'Karya Bersama', 'vendor_alamat' => 'Balanipa', 'vendor_penerima' => 'Penerima Toko', 'items' => [['nama' => 'Cat', 'volume' => '14', 'satuan' => 'Kelang', 'harga' => '190000']], 'components' => [['label' => 'PPN', 'kategori' => 'pajak', 'metode' => 'nominal', 'nominal' => '263603', 'perlakuan' => 'termasuk']]];
+        return ['expected_revision'=>1, 'nomor_bukti' => 'B-001', 'tanggal' => '2026-01-19', 'kategori' => 'Barang', 'vendor_nama' => 'Karya Bersama', 'vendor_alamat' => 'Balanipa', 'vendor_penerima' => 'Penerima Toko', 'items' => [['nama' => 'Cat', 'volume' => '14', 'satuan' => 'Kelang', 'harga' => '190000']], 'components' => [['label' => 'PPN', 'kategori' => 'pajak', 'metode' => 'nominal', 'nominal' => '263603', 'perlakuan' => 'termasuk']]];
     }
 
     private function purchase(): Purchase
@@ -322,6 +322,30 @@ class WorkflowTest extends TestCase
         $this->get(route('v3.excel', $filters))->assertOk();
         $this->get(route('v3.csv', ['status' => 'bad']))->assertSessionHasErrors('status');
         $this->get(route('v3.reports', ['to' => '2026-01-31']))->assertOk();
+    }
+
+    public function test_report_pages_are_independent_and_exports_are_not_truncated(): void
+    {
+        $p = $this->purchase();
+        for ($i = 2; $i <= 12; $i++) {
+            $copy = $p->replicate();
+            $copy->nomor_bukti = 'PAGE-'.$i;
+            $copy->save();
+            V3Workflow::event('uji_laporan', $copy);
+        }
+        $response = $this->get(route('v3.reports', ['page'=>2, 'events_page'=>1, 'tahun'=>2026]));
+        $response->assertOk()
+            ->assertViewHas('rows', fn ($rows) => $rows->currentPage() === 2 && $rows->count() === 2 && $rows->total() === 12)
+            ->assertViewHas('events', fn ($events) => $events->currentPage() === 1 && $events->count() === 10)
+            ->assertSee('report-recap')->assertSee('report-history');
+        $this->get(route('v3.reports', ['events_page'=>2]))->assertOk()
+            ->assertViewHas('rows', fn ($rows) => $rows->currentPage() === 1 && $rows->count() === 10)
+            ->assertViewHas('events', fn ($events) => $events->currentPage() === 2);
+        $csv = $this->get(route('v3.csv', ['tahun'=>2026, 'page'=>2]))->assertOk()->streamedContent();
+        $this->assertStringContainsString('B-001', $csv);
+        $this->assertStringContainsString('PAGE-12', $csv);
+        $export = new V3Export($p->school_profile_id, ['tahun'=>2026]);
+        $this->assertSame(12, $export->query()->count());
     }
 
     public function test_revision_diff_and_deduplicated_assets(): void

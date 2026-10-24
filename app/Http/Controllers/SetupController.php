@@ -32,6 +32,7 @@ class SetupController extends Controller
         $user = $setup->complete($data);
         Auth::login($user);
         $request->session()->regenerate();
+        $request->session()->put('account_version', (int)$request->user()->session_version);
 
         return redirect()->route('admin.users.create')->with('success', 'Sekolah dan admin siap. Sekarang tambahkan akun bendahara dan kepala sekolah.');
     }

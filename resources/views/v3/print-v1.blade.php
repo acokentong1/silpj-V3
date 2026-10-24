@@ -58,12 +58,12 @@
  <div class="preview-scroll" role="region" aria-label="Pratinjau kertas A4, geser ke samping pada layar kecil" tabindex="0">
   <article class="preview-paper" aria-label="Isi dokumen">
    
-@include('v3.print-document',['doc'=>$doc,'s'=>$s])
+@include(($doc->snapshot['template_version']??1)>=2 && ($doc->snapshot['purchase']['kategori']??'')==='Jasa' ? 'v3.print-service' : 'v3.print-document',['doc'=>$doc,'s'=>$s])
   </article>
  </div>
 </main>
 @else
-@include('v3.print-document',['doc'=>$doc,'s'=>$s])
+@include(($doc->snapshot['template_version']??1)>=2 && ($doc->snapshot['purchase']['kategori']??'')==='Jasa' ? 'v3.print-service' : 'v3.print-document',['doc'=>$doc,'s'=>$s])
 @endif
 </body>
 </html>

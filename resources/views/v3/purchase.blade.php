@@ -16,6 +16,9 @@
 </p>
 @if(!$p->editable())<div class="locked">🔒 Transaksi terkunci · {{ $p->status }}. Data dan dokumen tidak dapat diubah.</div>
 @endif
+<div data-compact-tabs>
+<div class="compact-tabbar" aria-label="Bagian transaksi" hidden></div>
+<div id="belanja-rincian" data-tab-label="Rincian belanja">
 <section class="card">
 <div class="between">
 <div>
@@ -81,12 +84,19 @@
 @endforeach
 </div>
 </section>
+</div>
+<div id="belanja-penerimaan" data-tab-label="Penerimaan">
 @include('v3.partials.receipts')
+</div>
+<div id="belanja-dokumen" data-tab-label="Dokumen LPJ">
 @include('v3.partials.transaction-documents')
+</div>
+<div id="belanja-bukti" data-tab-label="Bukti transaksi">
 <section class="card">
 <h2>Bukti transaksi</h2>
 @forelse($attachments as $f)<p>
-<a href="{{ route('v3.attachment',$f->id) }}">{{ $f->name }}</a> <small>{{ $f->created_at }}</small>
+<a href="{{ route('v3.attachment',$f->id) }}">{{ $f->name }}</a> <small>{{ $f->created_at }} · revisi {{ $f->revision }} · {{ $f->is_active?'Aktif':'Arsip' }}</small>
+@if($edit)<form method="post" action="{{ route('v3.evidence',$f->id) }}" data-confirm="Konfirmasi perubahan bukti?">@csrf<select name="action"><option value="confirm">Gunakan untuk revisi {{ $p->revision }}</option><option value="archive">Arsipkan bukti</option></select><button class="secondary">Perbarui</button></form>@endif
 </p>
 @empty<p class="muted">Unggah nota atau bukti pendukung sebelum mengajukan LPJ.</p>
 @endforelse
@@ -98,9 +108,8 @@
 </form>
 @endif
 </section>
-@if(!auth()->user()->isKepalaSekolah())
-@include('v3.partials.review-actions')
-@endif
+</div>
+<div id="belanja-riwayat" data-tab-label="Riwayat">
 <section class="card">
 <h3>Riwayat perubahan</h3>
 @foreach($events as $e)<p>
@@ -111,4 +120,9 @@
 @include('v3.partials.revision-diff')
 @endforeach
 </section>
+</div>
+</div>
+@if($edit && !auth()->user()->isKepalaSekolah())
+@include('v3.partials.review-actions')
+@endif
 @endsection

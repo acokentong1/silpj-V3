@@ -1,0 +1,53 @@
+/* SILPJ minimal refresh: same emerald palette, no external font dependency. */
+:root{--green:#146452;--ink:#183330;--muted:#647873;--line:#dfe7e3;--bg:#f5f7f4}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:-.012em}
+body:not(.sa-body){background:#f5f7f4;color:#183330}
+.shell{grid-template-columns:230px minmax(0,1fr)}
+.shell>aside{padding:28px 14px;background:#fff}.shell>main{padding:34px 40px 64px;max-width:1520px}
+body>header{height:76px;padding:0 30px;box-shadow:0 1px 4px #18333004}
+.brand{font-size:22px;letter-spacing:-.6px}.brand-icon{border-radius:12px;background:#146452}
+.shell nav{gap:4px}.shell nav a{padding:10px 13px;border-radius:9px;font-size:13px;font-weight:550;transition:background .15s,color .15s}
+.shell nav a:hover,.shell nav a.active{background:#e9f2eb;color:#146452;text-decoration:none}
+h1{font-size:clamp(24px,2.3vw,32px);font-weight:720;letter-spacing:-.9px}h2{font-size:18px;font-weight:650;letter-spacing:-.3px}h3{font-weight:650}
+.card{border:1px solid #dfe7e3;border-radius:16px;padding:26px;margin:20px 0;box-shadow:0 3px 14px #18333003;background:#fff}
+.stats{gap:14px}.stat{padding:20px 22px;border-radius:13px;border:1px solid #dfe7e3;background:#fff}.stat strong{font-size:clamp(22px,2vw,30px);letter-spacing:-1px;font-weight:700}.stat small{font-size:12px}
+button,.button{border-radius:9px;font-weight:600;padding:10px 16px;transition:background .15s,box-shadow .15s}.button:not(.secondary):not(.danger),button:not(.secondary):not(.danger){background:#146452;color:white}
+.secondary{background:white;color:#183330;border:1px solid #dfe7e3}button:focus-visible,a:focus-visible{outline:3px solid #8dc7b6;outline-offset:3px}
+input,select,textarea{border-radius:9px;border-color:#d3dfd9;padding:11px 12px;box-shadow:none}input:focus,select:focus,textarea:focus{outline:2px solid #8dc7b6;outline-offset:1px}
+.table-wrap{border:1px solid #e7ede9;border-radius:11px}th{background:#f5f8f6;padding:13px 15px;font-size:10px;font-weight:650}td{padding:14px 15px}tbody tr:last-child td{border-bottom:0}tbody tr:hover{background:#fafcfb}
+.badge{border-radius:20px;padding:4px 10px;font-size:11px}.notice{border-radius:11px}.aside-note{font-size:12px;margin-top:35px;font-weight:500;line-height:1.7}.aside-note small{font-size:11px}
+.total-box{border-radius:13px;background:#f0f5ef}.steps span{border-radius:20px;background:#edf3ef}.eyebrow{letter-spacing:1.4px;font-size:10px}small,.muted{line-height:1.7}
+.sa-sidebar{box-shadow:none}.sa-main .sa-card{border-radius:16px;box-shadow:0 3px 14px #18333003}.sa-button{border-radius:9px}
+@media(max-width:1000px){.shell{grid-template-columns:190px minmax(0,1fr)}.shell>main{padding:26px 24px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){body>header{height:auto;min-height:70px;padding:14px 18px;flex-wrap:wrap;gap:10px}.shell{display:block}.shell>aside{padding:12px 16px;border-right:0;border-bottom:1px solid #dfe7e3}.shell>aside nav{display:flex;overflow-x:auto;gap:6px;padding-bottom:4px}.shell>aside nav a{white-space:nowrap;flex:0 0 auto}.shell>aside>.eyebrow,.shell .aside-note{display:none}.shell>main{padding:24px 16px 45px}.card{padding:19px;border-radius:13px}.grid{grid-template-columns:1fr}.stats{gap:10px}.stat{padding:15px}.stat strong{font-size:22px}.between{align-items:flex-start;flex-wrap:wrap}.table-wrap{max-width:100%}h1{font-size:26px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+/* Compact daily workspace */
+.shell>main{padding-top:22px}.shell>main>h1{margin:5px 0 12px}
+.shell>main>.eyebrow{margin:0}.shell>main .card{padding:18px;margin:14px 0}
+.shell>main h2{margin:0 0 12px}.shell>main h3{margin:12px 0 8px}
+.shell>main td{padding:10px 12px}.shell>main th{padding:10px 12px}
+.shell>main .stat{padding:12px 16px}.shell>main .stat strong{font-size:24px}
+.quick-actions{position:sticky;top:8px;z-index:5;display:flex;justify-content:flex-end;pointer-events:none}
+.quick-actions>*{pointer-events:auto;box-shadow:0 3px 12px #18333020}
+.compact-filter{align-items:end;gap:12px}.compact-filter label{min-width:140px}
+.compact-budget{margin:16px 0;border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px 18px}
+.compact-budget>summary{cursor:pointer;font-weight:600;color:var(--green)}
+.compact-budget .card{border:0;box-shadow:none;padding:12px 0;margin-bottom:0}
+.compact-tabbar{position:sticky;top:0;z-index:4;display:flex;gap:6px;overflow-x:auto;padding:10px 0;background:var(--bg);border-bottom:1px solid var(--line)}
+.compact-tabbar[hidden],[data-tab-label][hidden]{display:none!important}
+.compact-tabbar button{white-space:nowrap;background:#fff!important;color:var(--green)!important;border:1px solid var(--line);font-size:13px;padding:9px 13px}
+.compact-tabbar button[aria-selected="true"]{background:var(--green)!important;color:#fff!important;border-color:var(--green)}
+[data-compact-tabs] .total-box{width:100%;max-width:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px;padding:14px}
+[data-compact-tabs] .total-box>div{display:flex;flex-direction:column;gap:4px;margin:0;padding:0;border:0;font-size:14px}
+[data-compact-tabs] .total-box .grand{font-size:14px;border:0;padding:0}
+[data-compact-tabs] .document-option{padding:14px;min-height:0;gap:8px}
+[data-compact-tabs] .document-paper{display:none}
+[data-compact-tabs] .document-option h3{min-height:0;margin:8px 0;font-size:16px}
+[data-compact-tabs] .document-description{min-height:0;margin:0 0 8px}
+[data-compact-tabs] .document-option-bottom{margin-top:8px;padding-top:10px}
+[data-compact-tabs] .document-section-heading{margin-bottom:14px}
+[data-compact-tabs] .document-number{margin-bottom:10px;overflow-wrap:anywhere}
+[data-compact-tabs] .document-history{margin-top:18px;padding-top:14px}
+[data-compact-tabs] .document-cards{gap:12px}
+@media(max-width:700px){.quick-actions{top:4px}.shell>main .card{padding:14px}.compact-filter{flex-wrap:wrap}[data-compact-tabs] .total-box{grid-template-columns:repeat(2,minmax(0,1fr))}.compact-tabbar{scrollbar-width:thin}.compact-tabbar button{min-height:42px}}
+@media print{.compact-tabbar,.quick-actions{display:none!important}[data-tab-label][hidden]{display:block!important}}

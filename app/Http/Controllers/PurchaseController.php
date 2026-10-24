@@ -22,12 +22,13 @@ class PurchaseController extends SchoolController
             $p->load('items', 'components', 'vendor');
         }
 
-        return view('v3.form', compact('a', 'p'));
+        $vendorOptions = \App\Models\V3\Vendor::where('school_profile_id',$this->sid())->orderByDesc('id')->limit(200)->get()->unique(fn($v)=>$v->nama.'|'.$v->npwp);
+        return view('v3.form', compact('a', 'p','vendorOptions'));
     }
 
     private function data(Request $r, bool $edit): array
     {
-        $d = $r->validate(['nomor_bukti' => 'required|string|max:100', 'tanggal' => 'required|date_format:Y-m-d', 'kategori' => 'required|in:Barang,Jasa', 'vendor_nama' => 'required|string|max:255', 'vendor_alamat' => 'nullable|string|max:1000', 'vendor_penerima' => 'required|string|max:255', 'vendor_npwp' => 'nullable|string|max:50', 'reason' => ($edit ? 'required' : 'nullable').'|string|min:5|max:2000',
+        $d = $r->validate(['expected_revision' => ($edit ? 'required' : 'nullable').'|integer|min:1', 'nomor_bukti' => 'required|string|max:100', 'tanggal' => 'required|date_format:Y-m-d', 'kategori' => 'required|in:Barang,Jasa', 'vendor_nama' => 'required|string|max:255', 'vendor_alamat' => 'nullable|string|max:1000', 'vendor_penerima' => 'required|string|max:255', 'vendor_npwp' => 'nullable|string|max:50', 'reason' => ($edit ? 'required' : 'nullable').'|string|min:5|max:2000',
             'items' => 'required|array|min:1|max:200', 'items.*.nama' => 'required|string|max:255', 'items.*.volume' => 'required|numeric|min:0.001|max:1000000|decimal:0,3', 'items.*.satuan' => 'required|string|max:40', 'items.*.harga' => 'required|numeric|min:0|max:1000000000|decimal:0,2',
             'components' => 'nullable|array|max:30', 'components.*.label' => 'required|string|max:60', 'components.*.kategori' => 'required|in:pajak,lainnya', 'components.*.metode' => 'required|in:nominal,persentase', 'components.*.persentase' => 'nullable|numeric|min:0|max:100|decimal:0,4', 'components.*.dasar' => 'nullable|numeric|min:0|max:99999999999999|decimal:0,2', 'components.*.nominal' => 'nullable|numeric|min:0|max:99999999999999|decimal:0,2', 'components.*.perlakuan' => 'required|in:tambah,potong,termasuk']);
         foreach ($d['components'] ?? [] as $c) {
@@ -82,7 +83,7 @@ class PurchaseController extends SchoolController
             DB::transaction(function () use ($file, $path, $id) {
                 $p = V3Workflow::purchase($id, true);
                 V3Workflow::assertEditable($p);
-                DB::table('v3_attachments')->insert(['purchase_id' => $id, 'name' => $file->getClientOriginalName(), 'path' => $path, 'mime' => $file->getMimeType(), 'sha256' => hash_file('sha256', Storage::disk('local')->path($path)), 'created_at' => now(), 'updated_at' => now()]);
+                DB::table('v3_attachments')->insert(['purchase_id' => $id, 'revision' => $p->revision, 'is_active' => true, 'name' => $file->getClientOriginalName(), 'path' => $path, 'mime' => $file->getMimeType(), 'sha256' => hash_file('sha256', Storage::disk('local')->path($path)), 'created_at' => now(), 'updated_at' => now()]);
                 V3Workflow::event('unggah_bukti', $p);
             }, 3);
         } catch (\Throwable $e) {

@@ -42,8 +42,11 @@ class AccountController extends SchoolController
             $u->is_active = $d['is_active'];
             if (! empty($d['password'])) {
                 $u->password = $d['password'];
+                $u->session_version++;
+                $u->remember_token = \Illuminate\Support\Str::random(60);
             }
             $u->save();
+            if (!empty($d['password'])) V3Workflow::event('reset_password', null, null, ['target_user_id'=>$id]);
             V3Workflow::event('ubah_akun', null, null, ['id' => $id, 'role' => $u->role, 'is_active' => $u->is_active]);
         });
 

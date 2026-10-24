@@ -23,7 +23,10 @@ class DocumentController extends SchoolController
     {
         $doc = Document::where('school_profile_id', $this->sid())->findOrFail($id);
         $s = DocumentAssets::hydrate($doc->snapshot, $doc->school_profile_id);
-        $data = compact('doc', 's');
+        $live = \App\Models\V3\Purchase::findOrFail($doc->purchase_id);
+        $reviewStatus = $live->status;
+        $approvalTime = $live->approved_at;
+        $data = compact('doc', 's', 'reviewStatus', 'approvalTime');
         if ($r->boolean('pdf')) {
             return Pdf::loadView('v3.print-v1', $data)->setPaper('a4')->download($doc->jenis.'-'.$doc->id.'.pdf');
         }

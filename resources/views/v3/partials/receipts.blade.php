@@ -4,7 +4,7 @@
  $received=\App\Services\ReceiptService::totals($p);
 @endphp
 <section class="card">
-<h2>Penerimaan barang bertahap</h2>
+<h2>{{ $p->kategori==='Jasa'?'Progres pekerjaan bertahap':'Penerimaan barang bertahap' }}</h2>
 <p class="muted">Catat setiap kedatangan. BAPB akhir memakai jumlah kumulatif setelah seluruh pesanan diterima. Mengubah transaksi atau mengganti nota pesanan memulai pencatatan penerimaan baru; tahap lama tetap tersimpan dalam riwayat.</p>
 @foreach($batches as $batch)
 <details>
@@ -12,6 +12,7 @@
 @foreach(json_decode($batch->items,true) as $key=>$row)
 <p>Barang {{ $key }}: {{ $row['baik'] }} baik, {{ $row['rusak'] }} tidak baik · {{ $row['catatan']??'' }}</p>
 @endforeach
+@if($edit)<form method="post" action="{{ route('v3.receipts.cancel',$batch->id) }}" data-confirm="Batalkan tahap penerimaan ini? Dokumen berita acara/kuitansi aktif akan dibatalkan.">@csrf<button class="secondary">Batalkan tahap / koreksi</button></form>@endif
 </details>
 @endforeach
 @if($edit&&\App\Services\V3Workflow::current($p,'nopes')&&!\App\Services\V3Workflow::current($p,'bapb'))

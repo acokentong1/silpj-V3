@@ -1,0 +1,39 @@
+/* Scoped to school settings and accounts. */
+.school-workspace [hidden]{display:none!important}
+.school-workspace .workspace-intro{margin:0 0 12px}
+.school-workspace .settings-fields{border:0;padding:0;margin:0;min-width:0}
+.school-workspace .grid{gap:12px 18px}
+.school-workspace label{margin:0;font-size:12px}
+.school-workspace input,.school-workspace select{min-height:42px;padding:9px 11px;margin-top:5px}
+.school-workspace textarea{min-height:64px;margin-top:5px;padding:9px 11px}
+.school-workspace .settings-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.school-workspace .compact-tabbar{position:static;padding:4px 0 10px;gap:8px}
+.school-workspace .settings-save{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;flex-wrap:wrap}
+.school-workspace .settings-save button{min-height:44px}
+.school-workspace .logo-preview{width:72px;height:72px;margin:10px 12px 0 0;vertical-align:middle}
+.school-workspace .account-password>summary,.school-workspace .account-create>summary{display:flex;align-items:center;gap:12px;padding:0;min-height:36px;flex-wrap:wrap}
+.school-workspace .account-password>summary:before,.school-workspace .account-create>summary:before{content:'+';font-size:20px;color:var(--green)}
+.school-workspace details[open]>summary:before{content:'−'}
+.school-workspace summary:focus-visible{outline:3px solid #8dc7b6;outline-offset:3px;border-radius:6px}
+.school-workspace summary>.muted{font-size:12px;font-weight:400}
+.school-workspace .disclosure-body{padding-top:16px}
+.school-workspace .account-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.school-workspace .account-toolbar h2{margin:0}
+.school-workspace .account-search{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:14px 0}
+.school-workspace .account-search label{width:min(440px,100%)}
+.school-workspace .account-search small{white-space:nowrap;padding-bottom:10px}
+.school-workspace .account-row{border-top:1px solid var(--line)}
+.school-workspace .account-row>summary{display:grid;grid-template-columns:minmax(0,1fr) 140px 90px 55px;align-items:center;gap:12px;padding:14px 0;list-style:none}
+.school-workspace summary::-webkit-details-marker{display:none}
+.school-workspace .account-row>summary:before{display:none}
+.school-workspace .account-identity{display:grid;gap:2px;overflow-wrap:anywhere}
+.school-workspace .account-identity small{font-weight:400;font-size:12px}
+.school-workspace .account-row .badge{justify-self:start}
+.school-workspace .status-active{background:#e8f5ed;color:#17653e}
+.school-workspace .status-inactive{background:#f2f3f2;color:#626963}
+.school-workspace .account-edit{font-size:12px;color:var(--green);text-decoration:underline}
+.school-workspace .account-row[open]{padding-bottom:6px}
+.school-workspace .account-row[open]>summary{background:#f6faf7}
+.school-workspace .account-row .disclosure-body{padding:4px 0 0}
+@media(max-width:1100px){.school-workspace .settings-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.school-workspace .settings-grid{grid-template-columns:1fr}.school-workspace .account-row>summary{grid-template-columns:minmax(0,1fr) auto;gap:6px 10px}.school-workspace .account-identity{grid-column:1/-1}.school-workspace .account-edit{grid-column:2;grid-row:3}.school-workspace .account-search{flex-wrap:wrap}.school-workspace .settings-save button{width:100%}.school-workspace .compact-tabbar button{flex:0 0 auto}.school-workspace .account-search small{padding:0}}

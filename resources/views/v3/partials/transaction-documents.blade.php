@@ -6,6 +6,7 @@
 @endpush
 @php
  $documentLabels=['nopes'=>'Nota Pesanan','bapb'=>'Berita Acara Pemeriksaan Barang','kuitansi'=>'Kuitansi'];
+ if($p->kategori==='Jasa') $documentLabels['bapb']='Berita Acara Pemeriksaan Pekerjaan';
  $documentDescriptions=['nopes'=>'Rincian pemesanan barang atau jasa kepada rekanan.','bapb'=>'Hasil pemeriksaan kondisi dan jumlah barang yang diterima.','kuitansi'=>'Bukti pembayaran dan pelunasan transaksi kepada rekanan.'];
  $currentDocs=$p->documents->where('status','terbit')->where('revision',$p->revision)->keyBy('jenis');
 @endphp
@@ -95,15 +96,15 @@
 .</p>
 </div>
 @if($kind==='bapb')<div class="document-form-section">
-<h3>Hasil pemeriksaan barang</h3>
+<h3>Hasil pemeriksaan {{ $p->kategori==='Jasa'?'pekerjaan':'barang' }}</h3>
 <p class="document-field-help">Jumlah baik dan tidak baik harus sama dengan volume pesanan. Jika tahap penerimaan sudah dicatat, sistem memakai total tahap tersebut dan mengabaikan isian jumlah di bawah.</p>
 <div class="table-wrap document-inspection">
 <table>
 <thead>
 <tr>
 <th>Barang / pesanan</th>
-<th>Baik</th>
-<th>Tidak baik</th>
+<th>{{ $p->kategori==='Jasa'?'Sesuai':'Baik' }}</th>
+<th>{{ $p->kategori==='Jasa'?'Belum sesuai':'Tidak baik' }}</th>
 <th>Catatan pemeriksaan</th>
 </tr>
 </thead>

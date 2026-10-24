@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>@yield('title','Kelola sekolah') · SILPJ Super Admin</title>
-<link rel="stylesheet" href="{{ asset('system-admin.css') }}?v=1"><script src="{{ asset('system-admin.js') }}?v=1" defer></script></head>
+<link rel="stylesheet" href="{{ asset('system-admin.css') }}?v=1"><script src="{{ asset('system-admin.js') }}?v=1" defer></script><link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}?v=20261024"><link rel="shortcut icon" href="{{ asset('favicon.ico') }}?v=20261024"><link rel="stylesheet" href="{{ asset('minimal.css') }}?v=20261024"></head>
 <body class="sa-body"><a class="sa-skip" href="#main">Lewati navigasi</a>
 <aside class="sa-sidebar"><a class="sa-brand" href="{{ route('system.schools') }}"><span class="sa-mark">S</span><span>SILPJ<small>ADMINISTRASI SISTEM</small></span></a>
 <p class="sa-nav-label">MENU UTAMA</p><nav aria-label="Navigasi super admin"><a class="sa-nav-link {{ request()->routeIs('system.schools*') ? 'is-active' : '' }}" href="{{ route('system.schools') }}" @if(request()->routeIs('system.schools*')) aria-current="page" @endif><span aria-hidden="true">▦</span> Kelola sekolah</a><a class="sa-nav-link" href="{{ route('system.backups') }}"><span aria-hidden="true">↓</span> Cadangan sistem</a>

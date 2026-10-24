@@ -1,6 +1,7 @@
 @extends('system.layout')
 @section('title','Cadangan dan penyimpanan')
 @section('content')
+@if($backupStatus)<div class="notice {{ $backupStatus['ok']?'':'error' }}">Backup terakhir: {{ $backupStatus['at'] }} · {{ $backupStatus['ok']?'Berhasil':'GAGAL — periksa log dan tujuan salinan' }} · {{ !empty($backupStatus['encrypted'])?'Terenkripsi':'Status enkripsi: lihat konfigurasi' }}</div>@else<div class="notice">Belum ada status backup. Pastikan scheduler aktif.</div>@endif
 <section class="sa-card" id="cadangan">
 <h2>Cadangan sistem</h2>
 <p>Jadwal aplikasi: setiap hari pukul 01.00 WITA, menyimpan 14 cadangan terakhir. Scheduler server harus aktif. Daftar berikut menunjukkan berkas yang benar-benar tersedia, bukan jaminan scheduler sedang berjalan.</p>

@@ -13,7 +13,7 @@
 @if(!$loop->first)<div class="document-start">
 </div>
 @endif
-@include('v3.print-document',['doc'=>$doc,'s'=>\App\Services\DocumentAssets::hydrate($doc->snapshot,$doc->school_profile_id)])
+@include(($doc->snapshot['template_version']??1)>=2 && ($doc->snapshot['purchase']['kategori']??'')==='Jasa' ? 'v3.print-service' : 'v3.print-document',['doc'=>$doc,'s'=>\App\Services\DocumentAssets::hydrate($doc->snapshot,$doc->school_profile_id)])
 @endforeach
 </body>
 </html>

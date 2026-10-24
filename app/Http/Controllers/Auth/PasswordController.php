@@ -20,9 +20,14 @@ class PasswordController extends Controller
             'password' => ['required', Password::defaults(), 'confirmed'],
         ]);
 
-        $request->user()->update([
+        $request->user()->forceFill([
             'password' => Hash::make($validated['password']),
-        ]);
+            'session_version' => (int)$request->user()->session_version + 1,
+            'remember_token' => \Illuminate\Support\Str::random(60),
+        ])->save();
+        $request->session()->regenerate();
+        $request->session()->put('account_version', (int)$request->user()->session_version);
+        \App\Services\V3Workflow::event('ubah_password');
 
         return back()->with('status', 'Kata sandi berhasil diperbarui.');
     }

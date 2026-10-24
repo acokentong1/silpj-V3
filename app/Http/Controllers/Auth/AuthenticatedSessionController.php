@@ -27,6 +27,7 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
+        $request->session()->put('account_version', (int)$request->user()->session_version);
 
         // A system administrator may have no school. Do not restore a stale
         // intended school dashboard URL after login.

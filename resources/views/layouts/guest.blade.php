@@ -13,7 +13,7 @@
         a:focus-visible,button:focus-visible{outline:3px solid #7abda3;outline-offset:3px}
         @media(prefers-reduced-motion:reduce){.auth-button{transition:none}.auth-button:hover{transform:none}}
     </style>
-</head>
+<link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}?v=20261024"><link rel="shortcut icon" href="{{ asset('favicon.ico') }}?v=20261024"><link rel="stylesheet" href="{{ asset('minimal.css') }}?v=20261024"></head>
 <body>
 <div class="auth-page">
     <div class="auth-shell">

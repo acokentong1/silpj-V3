@@ -25,6 +25,8 @@ class BackupService
                     throw new \RuntimeException('Gagal membuat ZIP.');
                 }
                 $opened = true;
+                $password=config('silpj.backup_password');
+                if($password && !$zip->setPassword($password)) throw new \RuntimeException('Gagal mengatur enkripsi cadangan.');
                 $files = ['database/silpj-v3.sqlite' => $db];
                 foreach (Storage::disk('local')->allFiles('v3') as $file) {
                     $files['storage/app/private/'.$file] = Storage::disk('local')->path($file);
@@ -34,17 +36,26 @@ class BackupService
                     if (! $zip->addFile($source, $entry)) {
                         throw new \RuntimeException('Gagal menambahkan berkas cadangan.');
                     }
+                    if($password && !$zip->setEncryptionName($entry, \ZipArchive::EM_AES_256)) throw new \RuntimeException('Enkripsi ZIP tidak didukung.');
                     $hashes[$entry] = hash_file('sha256', $source);
                 }
                 $zip->addFromString('SILPJ-V3-BACKUP.json', json_encode(['product' => 'silpj-v3', 'schema' => 3, 'created_at' => now()->toIso8601String(), 'sha256' => $hashes], JSON_THROW_ON_ERROR));
+                if($password && !$zip->setEncryptionName('SILPJ-V3-BACKUP.json', \ZipArchive::EM_AES_256)) throw new \RuntimeException('Enkripsi manifest gagal.');
                 if (! $zip->close()) {
                     throw new \RuntimeException('Gagal menyelesaikan ZIP.');
                 }
                 $opened = false;
                 $this->validate($path);
 
+                if($destination=config('silpj.backup_copy_directory')) {
+                    File::ensureDirectoryExists($destination,0700);
+                    $target=rtrim($destination,'/\\').'/'.basename($path);
+                    if(realpath($destination)!==realpath($dir) && (!copy($path,$target) || hash_file('sha256',$target)!==hash_file('sha256',$path))) throw new \RuntimeException('Salinan cadangan eksternal gagal.');
+                }
+                File::put(storage_path('app/private/backup-status.json'),json_encode(['ok'=>true,'at'=>now()->toIso8601String(),'file'=>basename($path),'encrypted'=>(bool)$password]));
                 return $path;
             } catch (\Throwable $e) {
+                File::put(storage_path('app/private/backup-status.json'),json_encode(['ok'=>false,'at'=>now()->toIso8601String(),'message'=>'Pencadangan gagal. Periksa log server dan tujuan salinan.']));
                 if ($opened) {
                     $zip->close();
                 }@unlink($path);
@@ -63,6 +74,7 @@ class BackupService
         if ($zip->open($path) !== true) {
             throw new \RuntimeException('Berkas ZIP tidak valid.');
         }
+        if($password=config('silpj.backup_password')) $zip->setPassword($password);
         try {
             $manifestStat = $zip->statName('SILPJ-V3-BACKUP.json');
             if (! $manifestStat || $manifestStat['size'] > 8388608 || $zip->numFiles > 100000) {
@@ -77,6 +89,8 @@ class BackupService
             for ($i = 0; $i < $zip->numFiles; $i++) {
                 $stat = $zip->statIndex($i);
                 $name = $stat['name'];
+                $zip->getExternalAttributesIndex($i,$opsys,$attributes);
+                if((($attributes >> 16) & 0170000) === 0120000) throw new \RuntimeException('Tautan simbolik tidak diizinkan dalam cadangan.');
                 $size += $stat['size'];
                 if ($size > 5 * 1024 * 1024 * 1024 || isset($seen[$name]) || str_contains($name, '..') || str_contains($name, '\\') || str_starts_with($name, '/')) {
                     throw new \RuntimeException('Isi arsip tidak aman atau terlalu besar.');
@@ -125,6 +139,7 @@ class BackupService
         File::ensureDirectoryExists($stage, 0700);
         $zip = new \ZipArchive;
         $zip->open($path);
+        if($password=config('silpj.backup_password')) $zip->setPassword($password);
         try {
             if (! $zip->extractTo($stage)) {
                 throw new \RuntimeException('Ekstraksi gagal.');
@@ -135,9 +150,9 @@ class BackupService
             if ($pdo->query('PRAGMA integrity_check')->fetchColumn() !== 'ok' || $pdo->query('PRAGMA foreign_key_check')->fetch() !== false || $pdo->query('SELECT product FROM v3_identity WHERE id=1')->fetchColumn() !== 'silpj-v3') {
                 throw new \RuntimeException('Integritas database cadangan gagal.');
             }
-            $expected = DB::table('migrations')->orderBy('migration')->pluck('migration')->all();
+            $expected = array_map(fn($p)=>pathinfo($p,PATHINFO_FILENAME),glob(database_path('migrations/*.php'))); sort($expected);
             $actual = $pdo->query('SELECT migration FROM migrations ORDER BY migration')->fetchAll(\PDO::FETCH_COLUMN);
-            if ($actual !== $expected) {
+            if (!$actual || $actual !== array_slice($expected,0,count($actual))) {
                 throw new \RuntimeException('Versi migrasi cadangan berbeda. Gunakan kode yang sesuai.');
             }
             foreach ($pdo->query('SELECT path,sha256 FROM v3_attachments') as $row) {
@@ -149,10 +164,26 @@ class BackupService
                     throw new \RuntimeException('Lampiran cadangan tidak lengkap.');
                 }
             }
+            $assetPaths=[];
+            foreach($pdo->query('SELECT logo_pemda,logo_sekolah FROM school_profiles') as $row) foreach(['logo_pemda','logo_sekolah'] as $key) if($row[$key]) $assetPaths[]=$row[$key];
+            foreach($pdo->query('SELECT snapshot FROM v3_documents') as $row) {
+                $snapshot=json_decode($row['snapshot'],true,512,JSON_THROW_ON_ERROR);
+                foreach(['logo_pemda_asset','logo_sekolah_asset'] as $key) if(!empty($snapshot['school'][$key])) $assetPaths[]=$snapshot['school'][$key];
+            }
+            foreach(array_unique($assetPaths) as $asset) {
+                if(!preg_match('#^v3/[a-zA-Z0-9_./-]+$#D',$asset) || str_contains($asset,'..') || !is_file($stage.'/storage/app/private/'.$asset)) throw new \RuntimeException('Aset sekolah atau dokumen tidak lengkap.');
+                if(str_contains($asset,'/document-assets/') && hash_file('sha256',$stage.'/storage/app/private/'.$asset)!==pathinfo($asset,PATHINFO_FILENAME)) throw new \RuntimeException('Checksum aset dokumen tidak cocok.');
+            }
             $pdo = null;
-            $this->create(); // Recovery copy of the current system, before replacement.
+            // Emergency recovery preserves raw damaged files without requiring SQL access.
+            if(defined('SILPJ_EMERGENCY_RESTORE') && SILPJ_EMERGENCY_RESTORE) {
+                $recovery=storage_path('app/private/emergency-original-'.date('Ymd-His').'-'.bin2hex(random_bytes(4)));
+                File::ensureDirectoryExists($recovery,0700);
+                $oldPath=config('database.connections.silpj_v3.database');
+                foreach(['','-wal','-shm'] as $suffix) if(is_file($oldPath.$suffix) && !copy($oldPath.$suffix,$recovery.'/database.sqlite'.$suffix)) throw new \RuntimeException('Gagal mengamankan berkas asli.');
+            } else $this->create();
             $db = config('database.connections.silpj_v3.database');
-            DB::statement('PRAGMA wal_checkpoint(TRUNCATE)');
+            if(!(defined('SILPJ_EMERGENCY_RESTORE') && SILPJ_EMERGENCY_RESTORE)) DB::statement('PRAGMA wal_checkpoint(TRUNCATE)');
             DB::disconnect();
             $assets = Storage::disk('local')->path('v3');
             $incoming = $stage.'/storage/app/private/v3';
@@ -165,6 +196,7 @@ class BackupService
                 throw new \RuntimeException('Gagal menyiapkan database pemulihan.');
             }
             $hadAssets = is_dir($assets);
+            $hadDb = is_file($db);
             $movedAssets = false;
             $movedDb = false;
             try {
@@ -175,24 +207,31 @@ class BackupService
                 if (! rename($incoming, $assets)) {
                     throw new \RuntimeException('Gagal memasang aset cadangan.');
                 }
-                if (! rename($db, $oldDb)) {
+                if ($hadDb && ! rename($db, $oldDb)) {
                     throw new \RuntimeException('Gagal menyiapkan database lama.');
                 }
                 $movedDb = true;
                 foreach (['-wal', '-shm'] as $suffix) {
                     if (is_file($db.$suffix)) {
-                        unlink($db.$suffix);
+                        rename($db.$suffix,$oldDb.$suffix);
                     }
                 }
                 if (! rename($nextDb, $db)) {
                     throw new \RuntimeException('Gagal memasang database.');
                 }
+                DB::purge();
+                if(\Illuminate\Support\Facades\Artisan::call('migrate',['--force'=>true])!==0) throw new \RuntimeException('Migrasi setelah pemulihan gagal.');
+                DB::table('users')->increment('session_version');
+                DB::table('users')->update(['remember_token'=>null]);
             } catch (\Throwable $e) {
+                DB::disconnect();
+                foreach(['-wal','-shm'] as $suffix) if(is_file($db.$suffix)) unlink($db.$suffix);
                 if ($movedDb) {
                     if (is_file($db)) {
                         unlink($db);
                     }
-                    rename($oldDb, $db);
+                    if($hadDb) rename($oldDb, $db);
+                    foreach(['-wal','-shm'] as $suffix) if(is_file($oldDb.$suffix)) rename($oldDb.$suffix,$db.$suffix);
                 }
                 if ($movedAssets) {
                     File::deleteDirectory($assets);
@@ -209,6 +248,7 @@ class BackupService
             if ($hadAssets) {
                 File::deleteDirectory($old);
             }
+            foreach(['-wal','-shm'] as $suffix) if(is_file($oldDb.$suffix)) unlink($oldDb.$suffix);
             if (is_file($oldDb)) {
                 unlink($oldDb);
             }

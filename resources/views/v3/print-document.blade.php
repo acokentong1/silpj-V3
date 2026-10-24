@@ -5,6 +5,8 @@
  $date=\Carbon\Carbon::parse($doc->tanggal);
  $titles=['nopes'=>'NOTA PESANAN BARANG','bapb'=>'BERITA ACARA PEMERIKSAAN BARANG','kuitansi'=>'KUITANSI'];
 @endphp
+@php $currentPurchase=\App\Models\V3\Purchase::where('school_profile_id',$doc->school_profile_id)->find($doc->purchase_id); @endphp
+<div style="font-size:9px;border:1px solid #777;padding:5px;margin-bottom:8px">Status pemeriksaan saat cetak: {{ strtoupper($currentPurchase?->status ?? 'tidak tersedia') }}. @if($currentPurchase?->status!=='disetujui') DOKUMEN KERJA — BELUM DISETUJUI. @else Disetujui: {{ $currentPurchase->approved_at }}. @endif</div>
 @if($doc->status!=='terbit')<div class="archive">ARSIP · {{ strtoupper($doc->status) }} · BUKAN DOKUMEN AKTIF</div>
 @endif
 <table class="kop">

@@ -15,6 +15,7 @@
  
 @if($p)
 @method('PUT')
+<input type="hidden" name="expected_revision" value="{{ old('expected_revision',$p->revision) }}">
 @endif
 <section class="card">
 <h2>
@@ -29,6 +30,7 @@
 @endforeach
 </select>
 </label>
+<label>Gunakan rekanan tersimpan<select id="vendor-picker"><option value="">Isi manual</option>@foreach($vendorOptions as $v)<option value="{{ $v->id }}" data-name="{{ $v->nama }}" data-address="{{ $v->alamat }}" data-person="{{ $v->penerima }}" data-tax="{{ $v->npwp }}">{{ $v->nama }} · {{ $v->npwp }}</option>@endforeach</select></label>
 <label>Nama toko / rekanan<input name="vendor_nama" required maxlength="255" value="{{ old('vendor_nama',$p?->vendor?->nama) }}">
 </label>
 <label>Nama pihak penerima<input name="vendor_penerima" required maxlength="255" value="{{ old('vendor_penerima',$p?->vendor?->penerima) }}">

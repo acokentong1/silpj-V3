@@ -25,6 +25,8 @@ class BackupController extends Controller
         $db = config('database.connections.silpj_v3.database');
         $databaseBytes = is_file($db) ? filesize($db) : 0;
 
+        $statusPath=storage_path('app/private/backup-status.json');
+        view()->share('backupStatus', is_file($statusPath)?json_decode(file_get_contents($statusPath),true):null);
         return view('system.backups', compact('backups', 'assetBytes', 'assetCount', 'databaseBytes'));
     }
 
@@ -54,6 +56,6 @@ class BackupController extends Controller
         $path = $service->create();
         DB::table('system_events')->insert(['actor_id' => $r->user()->id, 'action' => 'unduh_cadangan_sistem', 'created_at' => now(), 'updated_at' => now()]);
 
-        return response()->download($path, 'cadangan-silpj-v3-'.date('Ymd-His').'.zip')->deleteFileAfterSend();
+        return response()->download($path, 'cadangan-silpj-v3-'.date('Ymd-His').'.zip');
     }
 }

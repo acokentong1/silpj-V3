@@ -11,7 +11,7 @@ class ReceiptService
     public static function batches(Purchase $p)
     {
         return DB::table('v3_receipts')->where('purchase_id', $p->id)->where('revision', $p->revision)
-            ->where('nopes_id', V3Workflow::current($p, 'nopes')?->id)->orderBy('id')->get();
+            ->whereNull('cancelled_at')->where('nopes_id', V3Workflow::current($p, 'nopes')?->id)->orderBy('id')->get();
     }
 
     public static function totals(Purchase $p): array

@@ -7,9 +7,9 @@
 <link rel="stylesheet" href="<?php echo e(asset('v3.css')); ?>?v=3">
 <script src="<?php echo e(asset('rupiah.js')); ?>?v=1" defer>
 </script>
-<script src="<?php echo e(asset('v3.js')); ?>?v=4" defer>
+<script src="<?php echo e(asset('v3.js')); ?>?v=5" defer>
 </script>
-<link rel="stylesheet" href="<?php echo e(asset('approvals.css')); ?>?v=1"><?php echo $__env->yieldPushContent('page-assets'); ?></head>
+<link rel="stylesheet" href="<?php echo e(asset('approvals.css')); ?>?v=1"><?php echo $__env->yieldPushContent('page-assets'); ?><link rel="icon" type="image/svg+xml" href="<?php echo e(asset('favicon.svg')); ?>?v=20261024"><link rel="shortcut icon" href="<?php echo e(asset('favicon.ico')); ?>?v=20261024"><link rel="stylesheet" href="<?php echo e(asset('minimal.css')); ?>?v=20261025"></head>
 <body class="<?php echo e(auth()->user()->role==='kepala_sekolah'?'role-head':'role-standard'); ?>">
 <?php
  $roleLabel = auth()->user()->isSystemAdmin() ? 'Administrator Sistem' : (['kepala_sekolah'=>'Kepala Sekolah','bendahara'=>'Bendahara','admin'=>'Administrator Sekolah'][auth()->user()->role] ?? 'Pengguna');
@@ -37,6 +37,7 @@
 <?php if(auth()->user()->role!=='kepala_sekolah'): ?>
 <a href="<?php echo e(route('dashboard')); ?>" class="<?php echo e(request()->routeIs('dashboard','v3.activity*','v3.purchase','v3.create','v3.edit')?'active':''); ?>">Kegiatan & belanja</a>
 <?php endif; ?>
+<a href="<?php echo e(route('v3.vendors')); ?>">Rekanan</a><a href="<?php echo e(route('v3.audit')); ?>">Jejak audit</a><a href="<?php echo e(route('v3.notices')); ?>">Notifikasi (<?php echo e(\Illuminate\Support\Facades\DB::table('v3_notices')->where('user_id',auth()->id())->whereNull('read_at')->count()); ?>)</a>
 <a href="<?php echo e(route('v3.budgets')); ?>">Anggaran</a>
 <a href="<?php echo e(route('v3.reports')); ?>">Laporan & riwayat</a>
 <a href="<?php echo e(route('v3.settings')); ?>">Pengaturan sekolah</a>

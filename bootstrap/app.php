@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
+            'session.version' => \App\Http\Middleware\EnsureSessionVersion::class,
             'active' => EnsureAccountIsActive::class,
             'school.active' => \App\Http\Middleware\EnsureSchoolIsActive::class,
             'admin' => EnsureAdmin::class,

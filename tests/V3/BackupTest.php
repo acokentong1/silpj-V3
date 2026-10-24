@@ -103,4 +103,28 @@ class BackupTest extends TestCase
             DB::rollBack();
         }
     }
+
+    public function test_encrypted_backup_requires_correct_password(): void {
+        config(['silpj.backup_password'=>'test-long-password-only']);
+        $service=app(BackupService::class);$path=$service->create();
+        $this->assertSame('silpj-v3',$service->validate($path)['product']);
+        config(['silpj.backup_password'=>'incorrect-password']);
+        $this->expectException(\RuntimeException::class);$service->validate($path);
+    }
+    public function test_external_copy_and_status_are_written(): void {
+        config(['silpj.backup_copy_directory'=>$this->temporary.'/external']);
+        $path=app(BackupService::class)->create();
+        $this->assertSame(hash_file('sha256',$path),hash_file('sha256',$this->temporary.'/external/'.basename($path)));
+        $status=json_decode(file_get_contents(storage_path('app/private/backup-status.json')),true);
+        $this->assertTrue($status['ok']);
+    }
+    public function test_missing_referenced_logo_rejects_restore_without_changing_live_database(): void {
+        DB::table('school_profiles')->insert(['nama_sekolah'=>'Original','logo_pemda'=>'v3/missing.png']);
+        $path=app(BackupService::class)->create();
+        Artisan::call('down');
+        try {app(BackupService::class)->restore($path);$this->fail('Missing logo must be rejected');}
+        catch(\RuntimeException $e){$this->assertStringContainsString('Aset',$e->getMessage());}
+        finally{Artisan::call('up');}
+        $this->assertSame('Original',DB::table('school_profiles')->value('nama_sekolah'));
+    }
 }

@@ -46,8 +46,12 @@ return $q->findOrFail($id);
             $p = $id ? self::purchase($id, true) : new Purchase;
             if ($id) {
                 self::assertEditable($p);
+                if ((int)($data['expected_revision'] ?? 0) !== (int)$p->revision) {
+                    throw ValidationException::withMessages(['expected_revision'=>'Transaksi telah berubah. Muat ulang halaman sebelum mengedit; perubahan Anda belum disimpan.']);
+                }
                 abort_unless($p->activity_id === $activity->id, 404);
             }
+            abort_if($activity->is_archived,422,'Kegiatan sudah diarsipkan.');
             $calc = V3Calculator::calculate($data['items'], $data['components'] ?? []);
             $used = Purchase::whereHas('activity', fn ($q) => $q->where('budget_id', $budget->id))->where('status', '!=', 'dibatalkan')->when($id, fn ($q) => $q->where('id', '!=', $id))->select('id', 'bruto')->lazyById(500)->pluck('bruto')->reduce(fn ($carry, $v) => bcadd($carry, (string) $v, 2), '0');
             if (bccomp(bcadd($used, $calc['totals']['bruto'], 2), (string) $budget->nilai, 2) > 0) {
@@ -146,7 +150,7 @@ return $q->findOrFail($id);
             DB::table('v3_sequences')->where('id', $seq->id)->update(['last' => $number]);
             $roman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][(int) substr($data['tanggal'], 5, 2) - 1];
             $nomor = strtoupper($kind).'-'.str_pad((string) $number, 3, '0', STR_PAD_LEFT).'/'.$s->kode_surat.'/'.$s->kode_sekolah.'/'.$roman.'/'.$year;
-            $snapshot = ['template_version' => 1, 'school' => $school, 'purchase' => $p->toArray(), 'inspection' => $inspection, 'tanggal_lunas' => $data['tanggal_lunas'] ?? null, 'catatan' => $data['catatan'] ?? '', 'nopes_nomor' => $n?->nomor, 'bapb_nomor' => $b?->nomor];
+            $snapshot = ['template_version' => 2, 'school' => $school, 'purchase' => $p->toArray(), 'inspection' => $inspection, 'tanggal_lunas' => $data['tanggal_lunas'] ?? null, 'catatan' => $data['catatan'] ?? '', 'nopes_nomor' => $n?->nomor, 'bapb_nomor' => $b?->nomor];
             $doc = Document::create(['purchase_id' => $p->id, 'school_profile_id' => $s->id, 'jenis' => $kind, 'nomor' => $nomor, 'tanggal' => $data['tanggal'], 'versi' => ($p->documents()->where('jenis', $kind)->max('versi') ?? 0) + 1, 'revision' => $p->revision, 'snapshot' => $snapshot, 'created_by' => auth()->id()]);
             self::event('terbit_'.$kind, $p, null, ['document_id' => $doc->id, 'nomor' => $nomor]);
 
@@ -167,7 +171,7 @@ return $q->findOrFail($id);
                         throw ValidationException::withMessages(['status' => 'Lengkapi ketiga dokumen versi terbaru terlebih dahulu.']);
                     }
                 }
-                if (! DB::table('v3_attachments')->where('purchase_id', $id)->exists()) {
+                if (! DB::table('v3_attachments')->where('purchase_id', $id)->where('revision',$p->revision)->where('is_active',true)->exists()) {
                     throw ValidationException::withMessages(['status' => 'Unggah minimal satu bukti transaksi.']);
                 }
                 $p->status = 'diajukan';
@@ -197,6 +201,9 @@ return $q->findOrFail($id);
             }
             $p->save();
             self::event($action, $p, $reason, ['from' => $before, 'to' => $p->status]);
+            $recipients = \App\Models\User::where('school_profile_id',$p->school_profile_id)->where('is_active',true)->where('id','!=',$u->id);
+            if ($action==='ajukan') $recipients->where('role','kepala_sekolah'); else $recipients->whereIn('role',['admin','bendahara']);
+            foreach($recipients->get() as $recipient) DB::table('v3_notices')->insert(['school_profile_id'=>$p->school_profile_id,'purchase_id'=>$p->id,'user_id'=>$recipient->id,'message'=>$p->nomor_bukti.' · '.$p->status,'created_at'=>now(),'updated_at'=>now()]);
         }, 3);
     }
 

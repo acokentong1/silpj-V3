@@ -7,9 +7,9 @@
 <link rel="stylesheet" href="{{ asset('v3.css') }}?v=3">
 <script src="{{ asset('rupiah.js') }}?v=1" defer>
 </script>
-<script src="{{ asset('v3.js') }}?v=4" defer>
+<script src="{{ asset('v3.js') }}?v=5" defer>
 </script>
-<link rel="stylesheet" href="{{ asset('approvals.css') }}?v=1">@stack('page-assets')</head>
+<link rel="stylesheet" href="{{ asset('approvals.css') }}?v=1">@stack('page-assets')<link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}?v=20261024"><link rel="shortcut icon" href="{{ asset('favicon.ico') }}?v=20261024"><link rel="stylesheet" href="{{ asset('minimal.css') }}?v=20261025"></head>
 <body class="{{ auth()->user()->role==='kepala_sekolah'?'role-head':'role-standard' }}">
 @php
  $roleLabel = auth()->user()->isSystemAdmin() ? 'Administrator Sistem' : (['kepala_sekolah'=>'Kepala Sekolah','bendahara'=>'Bendahara','admin'=>'Administrator Sekolah'][auth()->user()->role] ?? 'Pengguna');
@@ -37,6 +37,7 @@
 @if(auth()->user()->role!=='kepala_sekolah')
 <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard','v3.activity*','v3.purchase','v3.create','v3.edit')?'active':'' }}">Kegiatan & belanja</a>
 @endif
+<a href="{{ route('v3.vendors') }}">Rekanan</a><a href="{{ route('v3.audit') }}">Jejak audit</a><a href="{{ route('v3.notices') }}">Notifikasi ({{ \Illuminate\Support\Facades\DB::table('v3_notices')->where('user_id',auth()->id())->whereNull('read_at')->count() }})</a>
 <a href="{{ route('v3.budgets') }}">Anggaran</a>
 <a href="{{ route('v3.reports') }}">Laporan & riwayat</a>
 <a href="{{ route('v3.settings') }}">Pengaturan sekolah</a>

@@ -1,37 +1,31 @@
-# Catatan verifikasi paket
+# SILPJ V3 — Pembaruan 24 Oktober 2026
 
-Tanggal: 11 Oktober 2026.
+## Memindahkan data lama
+Hentikan server, worker dan scheduler lama; simpan cadangan folder lama. Ekstrak paket ke folder BARU, jangan jalankan pemasang terlebih dahulu.
+Dari folder baru:
+php scripts/copy-v3-data.php --source="C:\lokasi\silpj-V3-lama" --stopped
+php scripts/install-v3.php
+Kemudian jalankan MULAI_SILPJ_V3.bat. Login ulang dan periksa data/cetakan. Jangan menjalankan kedua salinan sekaligus. Jangan menggunakan migrate:fresh pada data operasional.
+Instalasi kosong: jalankan PASANG_SILPJ_V3.bat lalu MULAI_SILPJ_V3.bat.
+PHP 8.2+ dengan pdo_sqlite, bcmath, mbstring, dom, xml, zip, gd dan fileinfo diperlukan. Vendor disertakan.
 
-## Lulus di lingkungan pembuatan
+## Perbaikan dan fitur
+Konflik edit berdasarkan revisi; pencabutan sesi setelah reset password; Excel nominal numerik; konfirmasi bukti per revisi; status persetujuan cetak; template dokumen jasa baru; LPJ final PDF; kas masuk/keluar dan pembayaran bertahap; penutupan periode oleh kepala sekolah; koreksi penerimaan; arsip kegiatan; direktori rekanan historis dengan pilihan ulang; notifikasi internal; audit berfilter dan ekspor; ringkasan anggaran kepala sekolah.
+LPJ final dari menu Laporan memerlukan tahun dan hanya memuat transaksi disetujui dengan dokumen/bukti lengkap, maksimal 150 transaksi per PDF. Memuat daftar bukti, bukan penggabungan isi seluruh foto/PDF bukti asli.
+Pembayaran lama tidak diimpor dari tanggal kuitansi. Saldo kas adalah catatan aplikasi, bukan saldo bank terverifikasi. Pembayaran aktif harus dibatalkan dengan alasan sebelum mengubah transaksi terkait.
+Periode tertutup mengunci perubahan terkait. Identitas kegiatan yang sudah bertransaksi dipertahankan. Notifikasi hanya dalam aplikasi, tidak mengirim WhatsApp/email.
 
-- `node --check public/v3.js`: sintaks JavaScript valid.
-- JavaScript asli dijalankan menggunakan Node VM dengan DOM tiruan: komponen termasuk harga tidak mengubah total; persentase sebagai penambah/potongan; volume pecahan; tambah/hapus baris; penomoran ulang field; kewajiban field sesuai metode pajak.
-- Pemeriksaan statis keseimbangan delimiter PHP dan keberadaan handler rute V3.
-- Pemeriksaan referensi rute/template aktif, batas data dan isolasi koneksi.
-- Pemeriksaan isi ZIP untuk tidak menyertakan `.env`, data V2, cache lama, atau basis data V2.
+## Backup dan pemulihan
+Kewenangan administrator sistem diberikan melalui konsol: php artisan silpj:system-admin email@sekolah.id
+Aktifkan scheduler Laravel setiap menit untuk backup pukul 01.00 WITA.
+php artisan silpj:backup --keep=14
+Retensi berarti jumlah berkas. Opsional .env: SILPJ_BACKUP_PASSWORD untuk enkripsi ZIP AES-256; simpan password terpisah. SILPJ_BACKUP_COPY_DIRECTORY untuk salinan pada media/mount terpisah yang dikelola operator; tidak ada sinkronisasi cloud otomatis.
+Normal: hentikan proses, php artisan down, lalu php artisan silpj:restore "backup.zip" --reason="Pemulihan data".
+Database rusak/hilang: hentikan semua proses, lalu:
+php scripts/emergency-restore.php --file="C:\backup.zip" --reason="Database rusak" --confirm=RESTORE
+Maintenance tetap aktif. Periksa hasil sebelum php artisan up. Database asli rusak diamankan sebagai berkas mentah. Backup terenkripsi memerlukan password yang sesuai.
 
-## Belum diverifikasi
-
-- Sintaks melalui `php -l`, migrasi, 14 tes PHPUnit, dan HTTP integrasi Laravel.
-- Tampilan melalui browser sungguhan pada desktop/mobile.
-- Hasil PDF, pagination panjang, logo, dan Excel pada runtime PHP.
-- Operasi backup/restore terhadap SQLite operasional.
-
-PHP dan Chromium tidak tersedia. Unduhan paket diblokir oleh jaringan lingkungan. Pengujian Node/DOM tiruan tidak membuktikan aplikasi Laravel sudah berjalan.
-
-## Uji penerimaan setelah instalasi
-
-1. Pengaturan awal menghasilkan satu sekolah/admin dan menutup setup publik.
-2. Pengguna sekolah lain tidak dapat membuka data/dokumen/bukti sekolah ini.
-3. Isi anggaran, kegiatan, dua transaksi berbeda rekanan, dan beberapa barang.
-4. Gunakan contoh 14 × 190000; tambah nilai nominal/persentase dan periksa bruto/netto.
-5. Unggah dua logo, cetak tiga PDF; periksa kop, tabel multi-halaman, terbilang, tanggal dan tanda tangan.
-6. Coba volume negatif, potongan melebihi bruto, nomor bukti ganda, tanggal tidak berurutan, dan kelebihan anggaran; semua harus ditolak.
-7. Ajukan dengan bukti. Periksa tidak ada tombol perubahan dan request langsung juga ditolak.
-8. Setujui dari akun lain. Coba menyetujui transaksi sendiri; harus ditolak.
-9. Buka revisi, ubah harga, terbitkan ulang; arsip lama tetap memakai rincian sebelumnya dan diberi penanda arsip.
-10. Ganti logo/profil; cetak arsip tetap memakai logo/profil semula.
-11. Ekspor Excel dan CSV; nama barang/rekanan yang diawali `=` tidak dijalankan sebagai rumus.
-12. Uji cadangan/pemulihan pada salinan V3 dan pastikan aplikasi pertama tetap berjalan dengan data aslinya.
-
-Jangan menganggap paket siap produksi sampai pengujian runtime dan cetakan selesai.
+## Pengujian
+php vendor/bin/phpunit --testsuite=V3
+Pemulihan database rusak/hilang dan migrasi salinan database unggahan telah diuji. Jumlah data utama terjaga; integrity_check dan foreign_key_check berhasil. Contoh PDF 7 halaman telah ditinjau visual.
+UAT sekolah, uji beban multiuser, konfigurasi hosting/HTTPS dan penyesuaian format resmi tetap diperlukan. Paket tidak menyertakan database, akun, bukti atau konfigurasi rahasia pengguna.

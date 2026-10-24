@@ -2,8 +2,10 @@
 @extends('v3.layout')
 @section('title','Kegiatan & belanja')
 @section('content')
+<div class="quick-actions">@if(auth()->user()->isBendahara())<button type="button" id="open-activity-dialog" aria-haspopup="dialog" aria-controls="activity-dialog">+ Tambah kegiatan</button>
+@endif</div>
 <p class="muted">Mulai dari kegiatan, tambahkan belanja, lalu lengkapi dokumen pertanggungjawaban.</p>
-<form method="get" action="{{ route('dashboard') }}" class="card actions">
+<form method="get" action="{{ url()->current() }}" class="card actions compact-filter">
 <label for="dashboard-year">Tahun anggaran<select name="tahun" id="dashboard-year">
 @foreach($years as $year)<option value="{{ $year }}" @selected($selectedYear===$year)>{{ $year }}</option>
 @endforeach
@@ -21,12 +23,11 @@
 </div>
 @endforeach
 </div>
-@include('v3.budget-summary')
+
 <section class="card">
 <div class="between">
 <h2>Daftar kegiatan</h2>
-@if(auth()->user()->isBendahara())<button type="button" id="open-activity-dialog" aria-haspopup="dialog" aria-controls="activity-dialog">+ Tambah kegiatan</button>
-@endif
+
 <form class="actions" method="get">
 <input type="hidden" name="tahun" value="{{ $selectedYear }}">
 <input aria-label="Cari kegiatan" name="q" value="{{ request('q') }}" placeholder="Cari nama kegiatan">
@@ -105,4 +106,8 @@
 @endif
 </dialog>
 @endif
+<details class="compact-budget">
+<summary>Penggunaan anggaran sekolah · {{ $selectedYear }} — lihat ringkasan</summary>
+@include('v3.budget-summary')
+</details>
 @endsection

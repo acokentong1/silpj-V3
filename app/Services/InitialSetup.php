@@ -35,7 +35,7 @@ class InitialSetup
             $user->forceFill([
                 'name' => $data['name'], 'email' => $data['email'],
                 'password' => $data['password'], 'role' => 'admin',
-                'is_active' => true, 'school_profile_id' => $school->id,
+                'session_version' => 1, 'is_active' => true, 'school_profile_id' => $school->id,
             ])->save();
             DB::table('installation_state')->where('id', 1)->update(['completed' => true]);
             DB::table('v3_events')->insert(['school_profile_id' => $school->id, 'actor_id' => $user->id, 'action' => 'pengaturan_awal', 'created_at' => now(), 'updated_at' => now()]);
