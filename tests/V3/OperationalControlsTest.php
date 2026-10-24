@@ -60,7 +60,8 @@ class OperationalControlsTest extends TestCase
         $wf = app(V3Workflow::class);
         $wf->issue($p->id, ['jenis' => 'nopes', 'tanggal' => '2026-01-19']);
         $wf->issue($p->id, ['jenis' => 'bapb', 'tanggal' => '2026-01-20', 'inspection' => [1 => ['baik' => '14', 'rusak' => '0']]]);
-        $wf->issue($p->id, ['jenis' => 'kuitansi', 'tanggal' => '2026-01-21', 'tanggal_lunas' => '2026-01-21']);
+        $this->post(route('v3.upload',$p->id),['category'=>'pembayaran','file'=>UploadedFile::fake()->create('transfer.pdf',1,'application/pdf')])->assertSessionHasNoErrors();
+        $wf->issue($p->id, ['payment_confirmed'=>true, 'jenis' => 'kuitansi', 'tanggal' => '2026-01-21', 'tanggal_lunas' => '2026-01-21']);
     }
 
 
@@ -74,12 +75,12 @@ class OperationalControlsTest extends TestCase
     }
     public function test_evidence_requires_confirmation_after_revision(): void {
         $p=$this->purchase();
-        $this->post(route('v3.upload',$p->id),['file'=>UploadedFile::fake()->create('proof.pdf',1,'application/pdf')])->assertSessionHasNoErrors();
+        $this->post(route('v3.upload',$p->id),['category'=>'nota','file'=>UploadedFile::fake()->create('proof.pdf',1,'application/pdf')])->assertSessionHasNoErrors();
         app(V3Workflow::class)->save($this->activity,$this->payload()+['reason'=>'Koreksi dokumen'],$p->id);
         $p->refresh(); $this->issueAll($p);
         $this->post(route('v3.transition',$p->id),['action'=>'ajukan'])->assertSessionHasErrors('status');
         $id=DB::table('v3_attachments')->value('id');
-        $this->post(route('v3.evidence',$id),['action'=>'confirm','reason'=>'Bukti masih sesuai'])->assertSessionHasNoErrors();
+        $this->post(route('v3.evidence',$id),['action'=>'confirm','category'=>'nota','reason'=>'Bukti masih sesuai'])->assertSessionHasNoErrors();
         $this->post(route('v3.transition',$p->id),['action'=>'ajukan'])->assertSessionHasNoErrors();
     }
     public function test_excel_amounts_are_numeric_and_untrusted_text_is_not_formula(): void {
@@ -137,7 +138,7 @@ class OperationalControlsTest extends TestCase
     }
     public function test_final_report_excludes_drafts_and_includes_approved_documents(): void {
         $p=$this->purchase();$this->issueAll($p);
-        $this->post(route('v3.upload',$p->id),['file'=>UploadedFile::fake()->create('proof.pdf',1,'application/pdf')]);
+        $this->post(route('v3.upload',$p->id),['category'=>'nota','file'=>UploadedFile::fake()->create('proof.pdf',1,'application/pdf')]);
         $this->get(route('v3.final',['tahun'=>2026]))->assertSessionHasErrors('laporan');
         $p->update(['status'=>'disetujui','approved_by'=>$this->reviewer->id,'approved_at'=>now()]);
         $response=$this->get(route('v3.final',['tahun'=>2026]));$response->assertOk()->assertHeader('content-type','application/pdf');
@@ -149,7 +150,7 @@ class OperationalControlsTest extends TestCase
     }
     public function test_notice_created_for_reviewer_and_not_visible_to_other_user(): void {
         $p=$this->purchase();$this->issueAll($p);
-        $this->post(route('v3.upload',$p->id),['file'=>UploadedFile::fake()->create('proof.pdf',1,'application/pdf')]);
+        $this->post(route('v3.upload',$p->id),['category'=>'nota','file'=>UploadedFile::fake()->create('proof.pdf',1,'application/pdf')]);
         $this->post(route('v3.transition',$p->id),['action'=>'ajukan'])->assertSessionHasNoErrors();
         $id=DB::table('v3_notices')->value('id');
         $this->post(route('v3.notices.read',$id))->assertNotFound();

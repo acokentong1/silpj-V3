@@ -26,8 +26,13 @@ Route::middleware('guest')->group(function () {
 });
 Route::post('/logout', [Auth::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', 'session.version', 'active', 'school.active'])->group(function () {
+    Route::view('/panduan', 'v3.guide')->name('v3.guide');
+    Route::post('/belanja/{id}/duplikasi', [PurchaseController::class, 'duplicate'])->whereNumber('id')->name('v3.duplicate');
+    Route::get('/bukti/{id}/pratinjau', [PurchaseController::class, 'preview'])->whereNumber('id')->name('v3.preview');
     Route::get('/dashboard', [V::class, 'index'])->name('dashboard');
     Route::get('/persetujuan', [ApprovalController::class, 'index'])->name('v3.approvals');
+    Route::delete('/kegiatan/{id}', [\App\Http\Controllers\RemovalController::class,'activity'])->whereNumber('id')->name('v3.activity.remove');
+    Route::delete('/belanja/{id}', [\App\Http\Controllers\RemovalController::class,'purchase'])->whereNumber('id')->name('v3.purchase.remove');
     Route::post('/kegiatan', [ActivityController::class, 'activityStore'])->name('v3.activity.store');
     Route::get('/kegiatan/{id}', [ActivityController::class, 'activity'])->whereNumber('id')->name('v3.activity');
     Route::get('/kegiatan/{id}/dokumen.pdf', [ActivityController::class, 'activityDocuments'])->whereNumber('id')->name('v3.activity.documents');
@@ -63,7 +68,9 @@ Route::middleware(['auth', 'session.version', 'active', 'school.active'])->group
     Route::get('/notifikasi', [\App\Http\Controllers\OperationsController::class,'notices'])->name('v3.notices');
     Route::post('/notifikasi/{id}', [\App\Http\Controllers\OperationsController::class,'readNotice'])->whereNumber('id')->name('v3.notices.read');
     Route::get('/rekanan', [\App\Http\Controllers\OperationsController::class,'vendors'])->name('v3.vendors');
-    Route::get('/lpj-final.pdf', [\App\Http\Controllers\FinalReportController::class,'download'])->name('v3.final');
+    Route::post('/lpj-arsip', [\App\Http\Controllers\FinalReportController::class,'download'])->middleware('throttle:3,1')->name('v3.final.archive');
+    Route::get('/lpj-arsip/{id}/{format}', [\App\Http\Controllers\FinalReportController::class,'archived'])->whereUuid('id')->whereIn('format',['pdf','zip'])->name('v3.final.archived');
+    Route::get('/lpj-final.pdf' , [\App\Http\Controllers\FinalReportController::class,'download'])->name('v3.final');
     Route::get('/laporan.xlsx', [ReportController::class, 'excel'])->name('v3.excel');
     Route::get('/laporan.csv', [ReportController::class, 'csv'])->name('v3.csv');
 

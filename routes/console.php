@@ -51,7 +51,27 @@ Artisan::command('silpj:backup {--keep=14}', function () {
         return 1;
     }
 })->purpose('Cadangan SQLite dan berkas dengan checksum serta retensi');
-Schedule::command('silpj:backup --keep=14')->dailyAt('01:00')->timezone('Asia/Makassar')->withoutOverlapping();
+Artisan::command('silpj:backup-due', function () {
+    try {
+        return \Illuminate\Support\Facades\Cache::lock('silpj-backup-due', 3600)->block(5, function () {
+            $path = storage_path('app/private/backup-status.json');
+            $status = is_file($path) ? json_decode(file_get_contents($path), true) : null;
+            $today = now('Asia/Makassar')->toDateString();
+            if (($status['ok'] ?? false) && isset($status['at'], $status['file'])
+                && \Carbon\Carbon::parse($status['at'])->setTimezone('Asia/Makassar')->toDateString() === $today
+                && is_file(storage_path('app/private/v3-backups/'.basename($status['file'])))) {
+                $this->info('Cadangan hari ini sudah tersedia.');
+                return 0;
+            }
+            return $this->call('silpj:backup', ['--keep'=>14]);
+        });
+    } catch (Throwable $e) {
+        Log::error('Backup otomatis gagal', ['error'=>$e->getMessage()]);
+        $this->error('Backup otomatis gagal. Periksa log dan halaman Cadangan.');
+        return 1;
+    }
+})->purpose('Backup harian dengan pemeriksaan jadwal yang terlewat');
+Schedule::command('silpj:backup-due')->hourly()->withoutOverlapping();
 Artisan::command('silpj:restore {file} {--reason=}', function () {
     if (mb_strlen(trim($this->option('reason') ?? '')) < 5) {
         $this->error('Isi --reason minimal 5 karakter.');

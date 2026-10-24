@@ -6,7 +6,10 @@
  $titles=['nopes'=>'NOTA PESANAN BARANG','bapb'=>'BERITA ACARA PEMERIKSAAN BARANG','kuitansi'=>'KUITANSI'];
 @endphp
 @php $currentPurchase=\App\Models\V3\Purchase::where('school_profile_id',$doc->school_profile_id)->find($doc->purchase_id); @endphp
-<div style="font-size:9px;border:1px solid #777;padding:5px;margin-bottom:8px">Status pemeriksaan saat cetak: {{ strtoupper($currentPurchase?->status ?? 'tidak tersedia') }}. @if($currentPurchase?->status!=='disetujui') DOKUMEN KERJA — BELUM DISETUJUI. @else Disetujui: {{ $currentPurchase->approved_at }}. @endif</div>
+@php($approvedCurrent = $currentPurchase?->status === 'disetujui' && $doc->status === 'terbit' && (int)$doc->revision === (int)$currentPurchase->revision)
+@if(!$approvedCurrent)
+<div style="font-size:9px;border:1px solid #777;padding:5px;margin-bottom:8px">Status pemeriksaan saat cetak: {{ strtoupper($currentPurchase?->status ?? 'tidak tersedia') }}. DOKUMEN KERJA — BELUM DISETUJUI ATAU BUKAN VERSI AKTIF.</div>
+@endif
 @if($doc->status!=='terbit')<div class="archive">ARSIP · {{ strtoupper($doc->status) }} · BUKAN DOKUMEN AKTIF</div>
 @endif
 <table class="kop">
@@ -173,7 +176,7 @@
 @endif
 <div class="no-break">
 <p class="right">{{ $school['tempat_cetak'] }}, {{ $date->translatedFormat('d F Y') }}
-@if($doc->jenis==='kuitansi')<br>LUNAS BAYAR: {{ \Carbon\Carbon::parse($s['tanggal_lunas'])->translatedFormat('d F Y') }}
+@if($doc->jenis==='kuitansi')<br>@if(empty($s['payment_confirmed']))<small>CATATAN LEGACY: tanggal lunas diinput operator; konfirmasi bukti pembayaran belum tercatat.</small><br>@endif LUNAS BAYAR: {{ \Carbon\Carbon::parse($s['tanggal_lunas'])->translatedFormat('d F Y') }}
 @endif
 </p>
 <table class="sign">

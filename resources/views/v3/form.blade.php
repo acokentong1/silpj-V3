@@ -1,16 +1,15 @@
 
 @extends('v3.layout')
 @section('title',$p?'Ubah transaksi belanja':'Tambah transaksi belanja')
+@push('page-assets')
+<link rel="stylesheet" href="{{ asset('transaction-editor.css') }}?v=1">
+<script src="{{ asset('transaction-math.js') }}?v=1" defer></script>
+<script src="{{ asset('transaction-editor.js') }}?v=1" defer></script>
+@endpush
 @section('content')
 <p>
 <a href="{{ route('v3.activity',$a->id) }}">← {{ $a->nama }}</a> · {{ $a->budget->tahun }} / {{ $a->budget->sumber_dana }}</p>
-<div class="steps">
-<span>1 · Kegiatan dipilih</span>
-<span>2 · Rekanan & barang</span>
-<span>3 · Pajak mandiri</span>
-<span>4 · Dokumen</span>
-</div>
-<form method="post" action="{{ $p?route('v3.update',[$a->id,$p->id]):route('v3.store',$a->id) }}" id="purchase-form">
+<form method="post" action="{{ $p?route('v3.update',[$a->id,$p->id]):route('v3.store',$a->id) }}" id="purchase-form" data-error-tab="{{ collect($errors->keys())->contains(fn($key)=>str_starts_with($key,'components'))?2:(collect($errors->keys())->contains(fn($key)=>str_starts_with($key,'items'))?1:0) }}">
 @csrf
  
 @if($p)
@@ -19,7 +18,7 @@
 @endif
 <section class="card">
 <h2>
-<span class="section-num">2</span>Identitas transaksi & rekanan</h2>
+<span class="section-num">1</span>Identitas transaksi & rekanan</h2>
 <div class="grid">
 <label>Nomor bukti<input name="nomor_bukti" required maxlength="100" value="{{ old('nomor_bukti',$p?->nomor_bukti) }}">
 </label>
@@ -37,7 +36,7 @@
 </label>
 <label>NPWP (opsional)<input name="vendor_npwp" maxlength="50" value="{{ old('vendor_npwp',$p?->vendor?->npwp) }}">
 </label>
-<label class="wide">Alamat rekanan<input name="vendor_alamat" maxlength="1000" value="{{ old('vendor_alamat',$p?->vendor?->alamat) }}">
+<label>Alamat rekanan<input name="vendor_alamat" maxlength="1000" value="{{ old('vendor_alamat',$p?->vendor?->alamat) }}">
 </label>
 </div>
 </section>
@@ -90,7 +89,7 @@
 <span class="section-num">3</span>Pajak & komponen lain</h2>
 <button type="button" class="secondary" id="add-component">+ Tambah komponen</button>
 </div>
-<p class="muted">Masukkan nominal atau persentase sendiri. Pilih “Sudah termasuk” jika nilai hanya dirinci dan tidak mengubah total.</p>
+<p class="muted">Isi tarif sesuai transaksi. Persentase dihitung dari dasar yang dipilih. “Sudah termasuk” hanya merinci nilai, tanpa menambah atau memotong tagihan.</p>
 <div id="components">
 @foreach(old('components',$p?->components?->toArray()??[]) as $i=>$c)
 @include('v3.component-row',['i'=>$i,'c'=>$c])
@@ -98,7 +97,7 @@
 </div>
 <template id="component-template">
 @include('v3.component-row',['i'=>'INDEX','c'=>['label'=>'','kategori'=>'pajak','metode'=>'nominal','perlakuan'=>'termasuk']])</template>
-<div class="total-box">
+<div class="total-box" id="editor-summary"><h3>Ringkasan transaksi</h3>
 <div>
 <span>Subtotal barang</span>
 <strong id="sum-subtotal">Rp0</strong>
@@ -119,7 +118,7 @@
 <span>Diterima rekanan</span>
 <strong id="sum-netto">Rp0</strong>
 </div>
-<small>Total akan dihitung ulang ketika disimpan.</small>
+<div><span>Pajak tercatat</span><strong id="sum-tax">Rp0</strong></div><small>Pajak tercatat dapat mencakup nilai yang sudah termasuk harga. Angka ini tidak ditambahkan lagi ke total.</small><p id="calculation-error" role="alert" hidden></p>
 </div>
 </section>
 @if($p)<section class="card">
@@ -128,8 +127,8 @@
 <p class="muted">Dokumen terbit sebelumnya menjadi arsip. Terbitkan kembali dokumen berdasarkan rincian terbaru.</p>
 </section>
 @endif
-<div class="actions">
-<button>Simpan transaksi</button>
+<div class="actions editor-save">
+<button type="submit">Simpan transaksi</button>
 <a class="button secondary" href="{{ route('v3.activity',$a->id) }}">Kembali</a>
 </div>
 </form>

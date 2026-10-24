@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict');
+const {calculate}=require('../../public/transaction-math.js');
+const item=(harga,volume='1')=>({harga,volume});
+const component=(metode,perlakuan,extra)=>({metode,perlakuan,kategori:'pajak',...extra});
+let r=calculate([item('50000')],[]);assert.equal(r.netto,50000n);
+r=calculate([item('50000')],[component('nominal','termasuk',{nominal:'5000'})]);assert.equal(r.netto,50000n);assert.equal(r.tax,5000n);
+r=calculate([item('50000')],[component('persentase','tambah',{dasar:'50000',persentase:'10'})]);assert.equal(r.bruto,55000n);
+r=calculate([item('50000')],[component('persentase','potong',{dasar:'50000',persentase:'2'})]);assert.equal(r.netto,49000n);
+r=calculate([item('100.50','1.5')],[component('nominal','potong',{nominal:'0.50'})]);assert.equal(r.subtotal,151n);assert.equal(r.netto,150n);
+r=calculate([item('1')],[component('nominal','potong',{nominal:'2'})]);assert.equal(r.netto,-1n);
+r=calculate([item('1000000000','1000000')],[]);assert.equal(r.bruto,1000000000000000n);
+r=calculate([],[component('persentase','termasuk',{dasar:'99999999999999.99',persentase:'99.9999'})]);assert.equal(r.tax,99999900000000n);
+assert.throws(()=>calculate([item('oops')],[]));
+console.log('9 arithmetic scenarios passed.');

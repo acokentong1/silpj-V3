@@ -4,7 +4,7 @@
 @if($backupStatus)<div class="notice {{ $backupStatus['ok']?'':'error' }}">Backup terakhir: {{ $backupStatus['at'] }} · {{ $backupStatus['ok']?'Berhasil':'GAGAL — periksa log dan tujuan salinan' }} · {{ !empty($backupStatus['encrypted'])?'Terenkripsi':'Status enkripsi: lihat konfigurasi' }}</div>@else<div class="notice">Belum ada status backup. Pastikan scheduler aktif.</div>@endif
 <section class="sa-card" id="cadangan">
 <h2>Cadangan sistem</h2>
-<p>Jadwal aplikasi: setiap hari pukul 01.00 WITA, menyimpan 14 cadangan terakhir. Scheduler server harus aktif. Daftar berikut menunjukkan berkas yang benar-benar tersedia, bukan jaminan scheduler sedang berjalan.</p>
+<p>Backup diperiksa saat aplikasi dibuka dan setiap jam melalui MULAI_SILPJ_V3.bat; satu cadangan berhasil per hari (WITA), dengan 14 cadangan terbaru. Jika memakai server terpisah, aktifkan scheduler Laravel setiap menit. Daftar berikut menunjukkan berkas yang benar-benar tersedia, bukan jaminan scheduler sedang berjalan.</p>
 <p>Database: {{ number_format($databaseBytes/1048576,2,',','.') }} MB · {{ $assetCount }} berkas: {{ number_format($assetBytes/1048576,2,',','.') }} MB.</p>
 <form method="post" action="{{ route('v3.backup') }}">
 @csrf

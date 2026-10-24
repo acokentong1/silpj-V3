@@ -1,62 +1,13 @@
-SILPJ V3: Pengaturan dan Pengguna Sekolah Lebih Ringkas
+PANDUAN PEMBARUAN SILPJ V3
 
-PERUBAHAN
-Pengaturan sekolah menggunakan tiga tab: Identitas & nomor, Logo kop surat,
-dan Penandatangan. Tombol Simpan pengaturan menyimpan seluruh tab sekaligus.
-Ganti kata sandi berada dalam bagian Keamanan akun yang dapat dibuka/tutup.
+Paket ini adalah pembaruan lengkap, bukan tambalan empat file tampilan.
+Ikuti README.md untuk menyalin data lama ke folder baru lalu menjalankan
+scripts/install-v3.php agar migrasi tambahan diterapkan.
+Jangan gunakan migrate:fresh pada data operasional.
 
-Daftar akun menampilkan nama, email, peran dan status. Klik Kelola untuk
-membuka formulir akun. Hanya satu rincian akun terbuka pada satu waktu.
-Cari pengguna melalui nama, email atau peran. Tambah pengguna membuka formulir
-pembuatan akun. Formulir terkait terbuka kembali saat server mengembalikan
-kesalahan validasi. Tata letak menyesuaikan layar kecil.
+Menu kas/pembayaran bulanan tidak diaktifkan. Konfirmasi pembayaran hanya
+menjaga kebenaran administrasi kuitansi lunas.
+Daftar Bukti transaksi menyediakan kategori dan alasan konfirmasi/arsip.
+Laporan menyediakan Pratinjau PDF dan Arsip LPJ final beserta paket bukti.
 
-PEMASANGAN PADA APLIKASI YANG SUDAH BERJALAN
-1. Cadangkan folder aplikasi Anda.
-2. Salin empat file berikut dari paket ini ke lokasi yang sama pada aplikasi:
-   resources/views/v3/settings.blade.php
-   resources/views/v3/accounts.blade.php
-   public/school-workspace.css
-   public/school-workspace.js
-3. Jalankan: php artisan view:clear
-4. Muat ulang browser menggunakan Ctrl+F5.
-Tidak perlu migrasi database atau menginstal ulang aplikasi.
-Gunakan cara empat file di atas agar data terbaru pada aplikasi Anda tetap ada.
-
-Paket lengkap berasal dari ZIP yang Anda kirim. Perubahan hanya pada empat
-file tampilan tersebut dan penambahan panduan ini. Database, konfigurasi,
-controller, hak akses, dan data dokumen tidak diubah.
-
-PEMERIKSAAN
-Pemeriksaan sintaks JavaScript berhasil. Isi ZIP dibandingkan dengan sumber:
-file di luar empat file tampilan dan panduan tetap sama.
-Lingkungan pengerjaan tidak menyediakan PHP maupun executable Chromium.
-Pengujian Laravel, penyimpanan ke server, dan pemeriksaan visual browser
-belum dapat dijalankan. Setelah pemasangan, cek penyimpanan pengaturan,
-unggah logo, ubah peran/status, tambah akun dan ganti kata sandi di lingkungan
-pengujian Anda sebelum memakai perubahan untuk kegiatan rutin.
-
-
-PEMBARUAN LAPORAN & RIWAYAT
-Rekap belanja dan riwayat aktivitas kini berada pada dua tab.
-Filter utama: tahun, bulan, status. Buka Filter lainnya untuk tanggal,
-kegiatan dan sumber dana. Filter lanjutan yang aktif tetap terbuka.
-Rekap dan riwayat masing-masing menampilkan 10 baris per halaman.
-Riwayat tidak lagi terbatas pada 100 aktivitas; gunakan Berikutnya untuk
-melihat aktivitas lebih lama. Klik Lihat alasan untuk membaca alasan lengkap.
-Excel, CSV dan PDF memakai proses ekspor sebelumnya, terpisah dari pagination.
-
-Untuk memasang pembaruan laporan, salin juga empat file berikut:
-   app/Http/Controllers/ReportController.php
-   resources/views/v3/reports.blade.php
-   resources/views/v3/partials/report-pagination.blade.php
-   public/reports-workspace.css
-Kemudian jalankan php artisan view:clear dan muat ulang dengan Ctrl+F5.
-Jika belum memasang perbaikan sebelumnya, salin kedelapan file aplikasi
-pada daftar panduan ini. Tidak perlu mengganti database atau .env.
-
-Paket juga menyertakan tests/V3/WorkflowTest.php yang diperbarui dengan
-regresi pagination terpisah dan ekspor penuh. Test belum dijalankan karena
-PHP tidak tersedia. Untuk memeriksa pada lingkungan pengujian, jalankan:
-php artisan test --filter=test_report_pages_are_independent_and_exports_are_not_truncated
-Pengujian visual browser juga belum dijalankan karena Chromium tidak tersedia.
+Status pemeriksaan dan langkah uji ada di VERIFIKASI.md.

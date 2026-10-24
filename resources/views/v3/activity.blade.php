@@ -12,6 +12,7 @@
 @if(auth()->user()->isBendahara())<a class="button" href="{{ route('v3.create',$a->id) }}">+ Tambah transaksi</a>
 @endif
 </div>
+<form method="get"><label>Cari nomor bukti / rekanan<input name="q" maxlength="100" value="{{ request('q') }}"></label><label><input type="checkbox" name="show_cancelled" value="1" @checked(request()->boolean('show_cancelled')) style="width:auto"> Sertakan transaksi dibatalkan</label><button>Cari</button></form>
 <div class="table-wrap">
 <table>
 <thead>
@@ -36,6 +37,8 @@
 <td class="number">Rp{{ number_format($p->bruto,0,',','.') }}</td>
 <td>
 <a href="{{ route('v3.purchase',$p->id) }}">Rincian →</a>
+@if(auth()->user()->isBendahara()&&$p->editable())<form method="post" action="{{ route('v3.purchase.remove',$p->id) }}" data-confirm="Hapus transaksi {{ $p->nomor_bukti }} dari daftar aktif? Transaksi akan dibatalkan dan anggaran dilepas. Dokumen serta bukti tetap tersimpan sebagai riwayat.">
+@csrf @method('DELETE')<input type="hidden" name="expected_revision" value="{{ $p->revision }}"><button class="secondary small" style="color:#a73535" type="submit">Hapus</button></form>@endif
 </td>
 </tr>
 @empty<tr>
@@ -45,6 +48,7 @@
 </tbody>
 </table>
 </div>
+{{ $purchases->links() }}
 </section>
 <div class="actions">
 <a class="button" href="{{ route('v3.activity.documents',$a->id) }}">Unduh semua dokumen kegiatan (PDF)</a>

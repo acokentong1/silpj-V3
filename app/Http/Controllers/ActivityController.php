@@ -26,11 +26,15 @@ class ActivityController extends SchoolController
         return redirect()->route('v3.activity', $a->id)->with('success', 'Kegiatan dibuat. Tambahkan transaksi belanja.');
     }
 
-    public function activity(int $id)
+    public function activity(Request $r, int $id)
     {
         $a = Activity::where('school_profile_id', $this->sid())->with('budget')->findOrFail($id);
 
-        return view('v3.activity', ['a' => $a, 'purchases' => $a->purchases()->with('vendor')->latest()->get()]);
+        $d=$r->validate(['q'=>'nullable|string|max:100','show_cancelled'=>'nullable|boolean']);
+        $query=$a->purchases()->with('vendor');
+        if(!$r->boolean('show_cancelled')) $query->where('status','!=','dibatalkan');
+        if(!empty($d['q'])) $query->where(fn($q)=>$q->where('nomor_bukti','like','%'.$d['q'].'%')->orWhereHas('vendor',fn($v)=>$v->where('nama','like','%'.$d['q'].'%')));
+        return view('v3.activity', ['a' => $a, 'purchases' => $query->latest()->paginate(20)->withQueryString()]);
     }
 
     public function activityDocuments(int $id)

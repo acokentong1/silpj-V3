@@ -31,6 +31,7 @@
 <form class="actions" method="get">
 <input type="hidden" name="tahun" value="{{ $selectedYear }}">
 <input aria-label="Cari kegiatan" name="q" value="{{ request('q') }}" placeholder="Cari nama kegiatan">
+<label><input type="checkbox" name="show_archived" value="1" @checked(request()->boolean('show_archived')) style="width:auto"> Sertakan arsip</label>
 <button class="secondary">Cari</button>
 </form>
 </div>
@@ -49,13 +50,15 @@
 <tbody>
 @forelse($activities as $a)<tr>
 <td>
-<strong>{{ $a->nama }}</strong>
+<strong>{{ $a->nama }}</strong> @if($a->is_archived)<span class="badge">Arsip</span>@endif
 </td>
 <td>{{ $a->budget->tahun }} / {{ $a->budget->sumber_dana }}</td>
 <td>{{ $a->purchases_count }}</td>
 <td class="number">Rp{{ number_format($a->purchases_sum_bruto??0,0,',','.') }}</td>
 <td>
 <a href="{{ route('v3.activity',$a->id) }}">Buka →</a>
+@if(auth()->user()->isBendahara()&&!$a->is_archived)<form method="post" action="{{ route('v3.activity.remove',$a->id) }}" data-confirm="Hapus kegiatan {{ $a->nama }} dari daftar aktif? Kegiatan dengan transaksi aktif tidak dapat dihapus. Riwayat tetap tersimpan.">
+@csrf @method('DELETE')<button class="secondary small" style="color:#a73535" type="submit">Hapus</button></form>@endif
 </td>
 </tr>
 @empty<tr>

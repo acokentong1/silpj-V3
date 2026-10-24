@@ -16,7 +16,7 @@ class ReportController extends SchoolController
     {
         $filters = ReportQuery::filters($r);
 
-        return view('v3.reports', ['rows' => ReportQuery::query($this->sid(), $filters)->latest()->orderByDesc('id')->paginate(10)->withQueryString(), 'activities' => Activity::where('school_profile_id', $this->sid())->orderBy('nama')->get(), 'funds' => Budget::where('school_profile_id', $this->sid())->distinct()->pluck('sumber_dana'), 'events' => DB::table('v3_events')->join('users', 'users.id', '=', 'v3_events.actor_id')->where('v3_events.school_profile_id', $this->sid())->select('v3_events.*', 'users.name')->orderByDesc('v3_events.id')->paginate(10, ['*'], 'events_page')->withQueryString()]);
+        return view('v3.reports', ['archives'=>DB::table('v3_report_archives')->where('school_profile_id',$this->sid())->orderByDesc('created_at')->orderByDesc('id')->paginate(10,['*'],'archives_page')->withQueryString(), 'rows' => ReportQuery::query($this->sid(), $filters)->latest()->orderByDesc('id')->paginate(10)->withQueryString(), 'activities' => Activity::where('school_profile_id', $this->sid())->orderBy('nama')->get(), 'funds' => Budget::where('school_profile_id', $this->sid())->distinct()->pluck('sumber_dana'), 'events' => DB::table('v3_events')->join('users', 'users.id', '=', 'v3_events.actor_id')->where('v3_events.school_profile_id', $this->sid())->select('v3_events.*', 'users.name')->orderByDesc('v3_events.id')->paginate(10, ['*'], 'events_page')->withQueryString()]);
     }
 
     public function excel(Request $r)

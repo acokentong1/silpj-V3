@@ -55,9 +55,14 @@
 <div class="actions">
 <a class="button" href="<?php echo e(route('v3.excel',request()->except(['page','events_page']))); ?>">Unduh Excel</a>
 <a class="button secondary" href="<?php echo e(route('v3.csv',request()->except(['page','events_page']))); ?>">CSV</a>
-<a class="button secondary" href="<?php echo e(route('v3.final',array_merge(request()->except(['page','events_page']),['tahun'=>request('tahun')?:date('Y')]))); ?>">LPJ final PDF (disetujui)</a>
+<a class="button secondary" href="<?php echo e(route('v3.final',array_merge(request()->except(['page','events_page']),['tahun'=>request('tahun')?:date('Y')]))); ?>">Pratinjau LPJ PDF (disetujui)</a>
 </div>
 </div>
+<form method="post" action="<?php echo e(route('v3.final.archive')); ?>"><?php echo csrf_field(); ?>
+<?php $__currentLoopData = request()->only(['bulan','from','to','activity_id','sumber_dana']); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key=>$value): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><input type="hidden" name="<?php echo e($key); ?>" value="<?php echo e($value); ?>"><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+<label>Tahun LPJ<input type="number" name="tahun" min="2000" max="2100" required value="<?php echo e(request('tahun')?:date('Y')); ?>"></label>
+<button>Arsipkan LPJ final &amp; paket bukti</button>
+<p class="muted">Hanya transaksi disetujui dengan checklist lengkap. Setiap penerbitan membuat arsip baru; arsip sebelumnya tetap tersedia. Maksimal 150 transaksi dan 250 MB per paket.</p></form>
 <p class="muted">Transaksi dibatalkan ditampilkan untuk riwayat; keluarkan dari perhitungan realisasi.</p>
 <div class="table-wrap">
 <table>
@@ -91,6 +96,14 @@
 <?php echo $__env->make('v3.partials.report-pagination', ['pager'=>$rows, 'anchor'=>'report-recap', 'noun'=>'transaksi'], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 </section>
 </div>
+<section class="card" id="report-archives" data-tab-label="Arsip LPJ final">
+<h2>Arsip LPJ final</h2><p>PDF dan paket bukti menyimpan kondisi saat penerbitan; perubahan transaksi berikutnya tidak mengubah arsip. Daftar mencakup semua tahun.</p>
+<div class="table-wrap"><table><thead><tr><th>Arsip / waktu</th><th>Periode &amp; filter</th><th>Unduh</th></tr></thead><tbody>
+<?php $__empty_1 = true; $__currentLoopData = $archives; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $archive): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+<?php ($af=json_decode($archive->filters,true)); ?>
+<tr><td><?php echo e($archive->id); ?><br><?php echo e($archive->created_at); ?></td><td>Tahun <?php echo e($archive->tahun); ?> · Bulan <?php echo e($af['bulan']??'Semua'); ?><br>Sumber: <?php echo e($af['sumber_dana']??'Semua'); ?> · Kegiatan: <?php echo e($af['activity_id']??'Semua'); ?><br><?php echo e($af['from']??'Awal tahun'); ?> – <?php echo e($af['to']??'Akhir tahun'); ?></td><td><a href="<?php echo e(route('v3.final.archived',[$archive->id,'pdf'])); ?>">PDF</a> · <a href="<?php echo e(route('v3.final.archived',[$archive->id,'zip'])); ?>">ZIP + bukti</a></td></tr>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?><tr><td colspan="3">Belum ada LPJ diarsipkan.</td></tr><?php endif; ?>
+</tbody></table></div><?php echo e($archives->links()); ?></section>
 <section class="card" id="report-history" data-tab-label="Riwayat aktivitas">
 <div class="between"><h2>Riwayat aktivitas</h2><span class="badge"><?php echo e($events->total()); ?> aktivitas</span></div>
 <p class="report-hint muted">Aktivitas sekolah dari yang terbaru, 10 baris per halaman. Filter rekap tidak berlaku pada riwayat.</p>

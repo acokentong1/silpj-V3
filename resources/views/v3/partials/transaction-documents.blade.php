@@ -27,7 +27,7 @@
  $previousDoc=$previousKind?$currentDocs->get($previousKind):null;
  $ready=$kind==='nopes'||($currentDocs->has('nopes')&&($kind!=='kuitansi'||$currentDocs->has('bapb')));
  $defaultDate=max((string)$p->tanggal,(string)($previousDoc?->tanggal??$p->tanggal));
- $minDate=$previousDoc?->tanggal??($p->tahun.'-01-01');
+ $minDate=$previousDoc?->tanggal??$p->tanggal;
 @endphp
 <article class="document-option {{ $currentDoc?'document-complete':(!$ready?'document-waiting':'') }}">
 <div class="document-option-top">
@@ -97,7 +97,7 @@
 </div>
 @if($kind==='bapb')<div class="document-form-section">
 <h3>Hasil pemeriksaan {{ $p->kategori==='Jasa'?'pekerjaan':'barang' }}</h3>
-<p class="document-field-help">Jumlah baik dan tidak baik harus sama dengan volume pesanan. Jika tahap penerimaan sudah dicatat, sistem memakai total tahap tersebut dan mengabaikan isian jumlah di bawah.</p>
+<p class="document-field-help">Jumlah baik dan tidak baik harus sama dengan volume pesanan. Temuan tidak baik harus diselesaikan sebelum kuitansi dan pengajuan LPJ. Jika tahap penerimaan sudah dicatat, sistem memakai total tahap tersebut dan mengabaikan isian jumlah di bawah.</p>
 <div class="table-wrap document-inspection">
 <table>
 <thead>
@@ -136,6 +136,7 @@
 <textarea id="document-notes-{{ $kind }}" name="catatan" maxlength="2000" rows="3" placeholder="Tambahkan keterangan bila diperlukan">{{ old('jenis')===$kind?old('catatan'):'' }}</textarea>
 </label>
 </div>
+@if($kind==='kuitansi')<label><input type="checkbox" name="payment_confirmed" value="1" required @checked(old('payment_confirmed'))> Saya menyatakan pembayaran kepada rekanan sudah lunas.</label><p>Kuitansi dapat dibuat tanpa unggah bukti pembayaran terlebih dahulu. Bukti dapat dilengkapi kemudian sebelum pengajuan LPJ.</p>@endif
 <div class="document-publish-note">Dokumen yang diterbitkan menyimpan salinan data transaksi saat ini.</div>
 <div class="document-dialog-footer">
 <button type="button" class="secondary" data-document-close>Kembali</button>

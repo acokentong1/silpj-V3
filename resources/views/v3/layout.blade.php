@@ -7,9 +7,9 @@
 <link rel="stylesheet" href="{{ asset('v3.css') }}?v=3">
 <script src="{{ asset('rupiah.js') }}?v=1" defer>
 </script>
-<script src="{{ asset('v3.js') }}?v=5" defer>
+<script src="{{ asset('v3.js') }}?v=6" defer>
 </script>
-<link rel="stylesheet" href="{{ asset('approvals.css') }}?v=1">@stack('page-assets')<link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}?v=20261024"><link rel="shortcut icon" href="{{ asset('favicon.ico') }}?v=20261024"><link rel="stylesheet" href="{{ asset('minimal.css') }}?v=20261025"></head>
+<link rel="stylesheet" href="{{ asset('approvals.css') }}?v=1"><link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}?v=20261024"><link rel="shortcut icon" href="{{ asset('favicon.ico') }}?v=20261024"><link rel="stylesheet" href="{{ asset('minimal.css') }}?v=20261025">@stack('page-assets')</head>
 <body class="{{ auth()->user()->role==='kepala_sekolah'?'role-head':'role-standard' }}">
 @php
  $roleLabel = auth()->user()->isSystemAdmin() ? 'Administrator Sistem' : (['kepala_sekolah'=>'Kepala Sekolah','bendahara'=>'Bendahara','admin'=>'Administrator Sekolah'][auth()->user()->role] ?? 'Pengguna');
@@ -48,7 +48,9 @@
  
 @if(auth()->user()->isSystemAdmin())<a href="{{ route('system.schools') }}">Administrasi sistem</a>
 @endif
+<a href="{{ route('v3.guide') }}">Panduan penggunaan</a>
 </nav>
+<p class="muted" style="padding:12px;font-size:12px">SILPJ 3.1 RC1 · 25 Oktober 2026</p>
 <div class="aside-note">
 @if(auth()->user()->role==='kepala_sekolah')
 Periksa dengan jelas.<br>Setujui dengan yakin.<small>Tinjau rincian, dokumen, dan bukti transaksi sebelum memberikan keputusan.</small>

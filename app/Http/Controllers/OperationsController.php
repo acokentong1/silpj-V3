@@ -8,12 +8,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 class OperationsController extends SchoolController {
  public function evidence(Request $r,int $id) {
-  $this->editor(); $d=$r->validate(['action'=>'required|in:confirm,archive','reason'=>'required|string|min:5|max:2000']);
+  $this->editor(); $d=$r->validate(['action'=>'required|in:confirm,archive','reason'=>'required|string|min:5|max:2000','category'=>'required|in:nota,pembayaran,penerimaan,pajak,lainnya']);
   DB::transaction(function()use($d,$id){
    $f=DB::table('v3_attachments')->find($id); abort_unless($f,404);
    $p=V3Workflow::purchase($f->purchase_id,true); V3Workflow::assertEditable($p);
-   DB::table('v3_attachments')->where('id',$id)->update(['revision'=>$p->revision,'is_active'=>$d['action']==='confirm','updated_at'=>now()]);
-   V3Workflow::event('bukti_'.$d['action'],$p,$d['reason'],['attachment_id'=>$id,'previous_revision'=>$f->revision,'revision'=>$p->revision]);
+   DB::table('v3_attachments')->where('id',$id)->update(['category'=>$d['category'],'revision'=>$p->revision,'is_active'=>$d['action']==='confirm','updated_at'=>now()]);
+   V3Workflow::event('bukti_'.$d['action'],$p,$d['reason'],['attachment_id'=>$id,'previous_revision'=>$f->revision,'revision'=>$p->revision,'previous_category'=>$f->category,'category'=>$d['category']]);
   },3); return back()->with('success','Status bukti diperbarui.');
  }
  public function cancelReceipt(Request $r,int $id) {

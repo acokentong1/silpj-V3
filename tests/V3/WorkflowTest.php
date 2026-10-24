@@ -60,7 +60,114 @@ class WorkflowTest extends TestCase
         $wf = app(V3Workflow::class);
         $wf->issue($p->id, ['jenis' => 'nopes', 'tanggal' => '2026-01-19']);
         $wf->issue($p->id, ['jenis' => 'bapb', 'tanggal' => '2026-01-20', 'inspection' => [1 => ['baik' => '14', 'rusak' => '0']]]);
-        $wf->issue($p->id, ['jenis' => 'kuitansi', 'tanggal' => '2026-01-21', 'tanggal_lunas' => '2026-01-21']);
+        $this->post(route('v3.upload',$p->id),['category'=>'pembayaran','file'=>UploadedFile::fake()->create('transfer.pdf',1,'application/pdf')])->assertSessionHasNoErrors();
+        $wf->issue($p->id, ['payment_confirmed'=>true, 'jenis' => 'kuitansi', 'tanggal' => '2026-01-21', 'tanggal_lunas' => '2026-01-21']);
+    }
+
+    public function test_duplicate_prefills_only_details_without_creating_purchase(): void
+    {
+        $p = $this->purchase();
+        $count = Purchase::count();
+        $this->post(route('v3.duplicate', $p->id))->assertRedirect(route('v3.create', $p->activity_id))
+            ->assertSessionHas('_old_input.nomor_bukti', '')->assertSessionHas('_old_input.tanggal', '')
+            ->assertSessionHas('_old_input.items.0.nama', 'Cat');
+        $this->assertSame($count, Purchase::count());
+        $this->assertArrayNotHasKey('expected_revision', session('_old_input'));
+        $this->assertArrayNotHasKey('status', session('_old_input'));
+    }
+
+    public function test_duplicate_rejects_reviewer_and_archived_activity(): void
+    {
+        $p = $this->purchase();
+        $this->actingAs($this->reviewer)->post(route('v3.duplicate', $p->id))->assertForbidden();
+        $this->activity->update(['is_archived'=>true]);
+        $this->actingAs($this->writer)->post(route('v3.duplicate', $p->id))->assertStatus(422);
+    }
+
+    public function test_preview_is_inline_and_rejects_tampered_evidence(): void
+    {
+        $p = $this->purchase();
+        $path = 'v3/logo.png';
+        $disk = Storage::disk('local');
+        $id = DB::table('v3_attachments')->insertGetId(['purchase_id'=>$p->id, 'category'=>'nota', 'revision'=>1,
+            'is_active'=>true, 'name'=>'bukti.png', 'path'=>$path, 'mime'=>'image/png',
+            'sha256'=>hash_file('sha256',$disk->path($path)), 'created_at'=>now(), 'updated_at'=>now()]);
+        $response = $this->get(route('v3.preview', $id))->assertOk()->assertHeader('Content-Type', 'image/png');
+        $this->assertStringStartsWith('inline', $response->headers->get('Content-Disposition'));
+        DB::table('v3_attachments')->where('id',$id)->update(['sha256'=>str_repeat('0',64)]);
+        $this->get(route('v3.preview', $id))->assertStatus(409);
+    }
+
+    public function test_new_actions_do_not_expose_another_school(): void
+    {
+        $p = $this->purchase();
+        $school = SchoolProfile::create(['nama_sekolah'=>'Sekolah lain']);
+        $other = User::factory()->create(['school_profile_id'=>$school->id,'role'=>'bendahara']);
+        $id = DB::table('v3_attachments')->insertGetId(['purchase_id'=>$p->id,'category'=>'nota','revision'=>1,
+            'is_active'=>true,'name'=>'bukti.png','path'=>'v3/logo.png','mime'=>'image/png',
+            'sha256'=>str_repeat('0',64),'created_at'=>now(),'updated_at'=>now()]);
+        $this->actingAs($other)->post(route('v3.duplicate',$p->id))->assertNotFound();
+        $this->get(route('v3.preview',$id))->assertNotFound();
+    }
+
+    public function test_documents_share_b_prefix_and_continue_previous_sequence(): void
+    {
+        DB::table('v3_sequences')->insert(['school_profile_id'=>$this->writer->school_profile_id,
+            'jenis'=>'nopes','tahun'=>2026,'last'=>9]);
+        $p = $this->purchase();
+        $this->issueAll($p);
+        $docs = $p->documents()->orderBy('id')->get()->keyBy('jenis');
+        $this->assertSame('B-10/400.3.5.5/SDUJI/I/2026', $docs['nopes']->nomor);
+        $this->assertSame('B-11/400.3.5.5/SDUJI/I/2026', $docs['bapb']->nomor);
+        $this->assertSame('B-12/400.3.5.5/SDUJI/I/2026', $docs['kuitansi']->nomor);
+        $this->assertSame($docs['nopes']->nomor, $docs['bapb']->snapshot['nopes_nomor']);
+        $this->assertSame($docs['bapb']->nomor, $docs['kuitansi']->snapshot['bapb_nomor']);
+    }
+
+    public function test_approval_banner_follows_live_status_on_same_document(): void
+    {
+        foreach (['Barang','Jasa'] as $category) {
+            $data=$this->payload(); $data['kategori']=$category; $data['nomor_bukti']='STATUS-'.$category;
+            $p=app(V3Workflow::class)->save($this->activity,$data);
+            $doc=app(V3Workflow::class)->issue($p->id,['jenis'=>'nopes','tanggal'=>'2026-01-19']);
+            $url=route('v3.document',$doc->id);
+            $this->get($url)->assertOk()->assertSee('BELUM DISETUJUI');
+            $p->update(['status'=>'disetujui','approved_by'=>$this->reviewer->id,'approved_at'=>now()]);
+            $this->get($url)->assertOk()->assertDontSee('Status pemeriksaan saat cetak')->assertDontSee('BELUM DISETUJUI');
+            $p->update(['status'=>'revisi']);
+            $this->get($url)->assertOk()->assertSee('BELUM DISETUJUI');
+            $p->update(['status'=>'disetujui','revision'=>2]);
+            $this->get($url)->assertOk()->assertSee('BUKAN VERSI AKTIF');
+        }
+    }
+
+    public function test_legacy_numbers_update_in_place_and_references_remain_consistent(): void
+    {
+        $p=$this->purchase(); $this->issueAll($p);
+        $docs=$p->documents()->get()->keyBy('jenis');
+        $ids=$docs->pluck('id')->sort()->values()->all();
+        $legacy=[];
+        foreach ($docs as $kind=>$doc) {
+            $legacy[$kind]=strtoupper($kind).'-004/400.3.5.5/SDUJI/I/2026';
+            $doc->update(['nomor'=>$legacy[$kind]]);
+        }
+        foreach ($docs as $doc) {
+            $snapshot=$doc->snapshot;
+            if ($snapshot['nopes_nomor'] ?? null) $snapshot['nopes_nomor']=$legacy['nopes'];
+            if ($snapshot['bapb_nomor'] ?? null) $snapshot['bapb_nomor']=$legacy['bapb'];
+            $doc->update(['snapshot'=>$snapshot]);
+        }
+        \App\Services\NormalizeDocumentNumbers::run();
+        $current=$p->documents()->get()->keyBy('jenis');
+        $this->assertSame($ids,$current->pluck('id')->sort()->values()->all());
+        $this->assertCount(3,$current->pluck('nomor')->unique());
+        foreach ($current as $doc) $this->assertStringStartsWith('B-',$doc->nomor);
+        $this->assertSame($current['nopes']->nomor,$current['bapb']->snapshot['nopes_nomor']);
+        $this->assertSame($current['bapb']->nomor,$current['kuitansi']->snapshot['bapb_nomor']);
+        $numbers=$current->pluck('nomor','id')->all();
+        \App\Services\NormalizeDocumentNumbers::run();
+        $this->assertSame($numbers,$p->documents()->get()->keyBy('jenis')->pluck('nomor','id')->all());
+        $this->assertSame(3,DB::table('v3_document_number_changes')->count());
     }
 
     public function test_fixed_connection_does_not_use_old_environment(): void
@@ -138,7 +245,7 @@ class WorkflowTest extends TestCase
     {
         $p = $this->purchase();
         $this->issueAll($p);
-        $this->post(route('v3.upload', $p->id), ['file' => UploadedFile::fake()->create('bukti.pdf', 10, 'application/pdf')])->assertSessionHasNoErrors();
+        $this->post(route('v3.upload', $p->id), ['category'=>'nota', 'file' => UploadedFile::fake()->create('bukti.pdf', 10, 'application/pdf')])->assertSessionHasNoErrors();
         $this->post(route('v3.transition', $p->id), ['action' => 'ajukan'])->assertSessionHasNoErrors();
         $this->put(route('v3.update', [$this->activity->id, $p->id]), $this->payload() + ['reason' => 'Perbaikan data'])->assertSessionHasErrors('status');
         $this->post(route('v3.transition', $p->id), ['action' => 'setujui'])->assertForbidden();
@@ -249,7 +356,7 @@ class WorkflowTest extends TestCase
     {
         $p = $this->purchase();
         $this->issueAll($p);
-        $this->post(route('v3.upload', $p->id), ['file' => UploadedFile::fake()->create('bukti.pdf', 1, 'application/pdf')]);
+        $this->post(route('v3.upload', $p->id), ['category'=>'nota', 'file' => UploadedFile::fake()->create('bukti.pdf', 1, 'application/pdf')]);
         $this->post(route('v3.transition', $p->id), ['action' => 'ajukan'])->assertSessionHasNoErrors();
         $this->assertNotNull($p->fresh()->submitted_at);
         $other = $p->fresh()->replicate();

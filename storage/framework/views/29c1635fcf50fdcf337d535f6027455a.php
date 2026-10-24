@@ -7,9 +7,9 @@
 <link rel="stylesheet" href="<?php echo e(asset('v3.css')); ?>?v=3">
 <script src="<?php echo e(asset('rupiah.js')); ?>?v=1" defer>
 </script>
-<script src="<?php echo e(asset('v3.js')); ?>?v=5" defer>
+<script src="<?php echo e(asset('v3.js')); ?>?v=6" defer>
 </script>
-<link rel="stylesheet" href="<?php echo e(asset('approvals.css')); ?>?v=1"><?php echo $__env->yieldPushContent('page-assets'); ?><link rel="icon" type="image/svg+xml" href="<?php echo e(asset('favicon.svg')); ?>?v=20261024"><link rel="shortcut icon" href="<?php echo e(asset('favicon.ico')); ?>?v=20261024"><link rel="stylesheet" href="<?php echo e(asset('minimal.css')); ?>?v=20261025"></head>
+<link rel="stylesheet" href="<?php echo e(asset('approvals.css')); ?>?v=1"><link rel="icon" type="image/svg+xml" href="<?php echo e(asset('favicon.svg')); ?>?v=20261024"><link rel="shortcut icon" href="<?php echo e(asset('favicon.ico')); ?>?v=20261024"><link rel="stylesheet" href="<?php echo e(asset('minimal.css')); ?>?v=20261025"><?php echo $__env->yieldPushContent('page-assets'); ?></head>
 <body class="<?php echo e(auth()->user()->role==='kepala_sekolah'?'role-head':'role-standard'); ?>">
 <?php
  $roleLabel = auth()->user()->isSystemAdmin() ? 'Administrator Sistem' : (['kepala_sekolah'=>'Kepala Sekolah','bendahara'=>'Bendahara','admin'=>'Administrator Sekolah'][auth()->user()->role] ?? 'Pengguna');
@@ -48,7 +48,9 @@
  
 <?php if(auth()->user()->isSystemAdmin()): ?><a href="<?php echo e(route('system.schools')); ?>">Administrasi sistem</a>
 <?php endif; ?>
+<a href="<?php echo e(route('v3.guide')); ?>">Panduan penggunaan</a>
 </nav>
+<p class="muted" style="padding:12px;font-size:12px">SILPJ 3.1 RC1 · 25 Oktober 2026</p>
 <div class="aside-note">
 <?php if(auth()->user()->role==='kepala_sekolah'): ?>
 Periksa dengan jelas.<br>Setujui dengan yakin.<small>Tinjau rincian, dokumen, dan bukti transaksi sebelum memberikan keputusan.</small>

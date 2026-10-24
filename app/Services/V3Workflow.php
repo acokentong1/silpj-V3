@@ -43,6 +43,7 @@ return $q->findOrFail($id);
         return DB::transaction(function () use ($activity, $data, $id) {
             abort_unless($activity->school_profile_id === auth()->user()->school_profile_id, 404);
             $budget = Budget::whereKey($activity->budget_id)->where('school_profile_id', $activity->school_profile_id)->lockForUpdate()->firstOrFail();
+            $activity = Activity::where('school_profile_id',auth()->user()->school_profile_id)->lockForUpdate()->findOrFail($activity->id);
             $p = $id ? self::purchase($id, true) : new Purchase;
             if ($id) {
                 self::assertEditable($p);
@@ -115,12 +116,20 @@ return $q->findOrFail($id);
             if ($kind === 'kuitansi' && ! $b) {
                 throw ValidationException::withMessages(['jenis' => 'Terbitkan BAPB terlebih dahulu.']);
             }
-            $min = $kind === 'bapb' ? $n?->tanggal : ($kind === 'kuitansi' ? $b?->tanggal : null);
+            $min = $kind === 'bapb' ? $n?->tanggal : ($kind === 'kuitansi' ? $b?->tanggal : $p->tanggal);
             if ($min && $data['tanggal'] < $min) {
                 throw ValidationException::withMessages(['tanggal' => 'Tanggal dokumen tidak boleh mendahului dokumen sebelumnya.']);
             }
             if ((int) substr($data['tanggal'], 0, 4) !== $p->tahun) {
                 throw ValidationException::withMessages(['tanggal' => 'Tanggal dokumen harus sesuai tahun anggaran transaksi.']);
+            }
+            if ($kind === 'kuitansi') {
+                if (LpjReadiness::damaged($b)) {
+                    throw ValidationException::withMessages(['inspection'=>'Selesaikan barang rusak / pekerjaan belum sesuai, koreksi penerimaan, lalu terbitkan ulang berita acara sebelum kuitansi.']);
+                }
+                if (!in_array($data['payment_confirmed'] ?? null, [true, 1, '1', 'yes', 'on'], true)) {
+                    throw ValidationException::withMessages(['payment_confirmed'=>'Konfirmasikan bahwa pembayaran kepada rekanan sudah lunas sebelum menerbitkan kuitansi.']);
+                }
             }
             $inspection = [];
             if ($kind === 'bapb' && ReceiptService::batches($p)->isNotEmpty()) {
@@ -143,14 +152,20 @@ return $q->findOrFail($id);
                 throw ValidationException::withMessages(['tanggal_lunas' => 'Tanggal lunas harus pada/setelah tanggal kuitansi dan dalam tahun anggaran.']);
             }
             $year = (int) substr($data['tanggal'], 0, 4);
-            $key = ['school_profile_id' => $s->id, 'jenis' => $kind, 'tahun' => $year];
-            DB::table('v3_sequences')->insertOrIgnore($key + ['last' => 0]);
+            // All three document types share a B sequence to preserve school/number uniqueness.
+            $key = ['school_profile_id' => $s->id, 'jenis' => 'B', 'tahun' => $year];
+            $last = (int) DB::table('v3_sequences')->where('school_profile_id', $s->id)->where('tahun', $year)->max('last');
+            DB::table('v3_sequences')->insertOrIgnore($key + ['last' => $last]);
             $seq = DB::table('v3_sequences')->where($key)->lockForUpdate()->first();
             $number = $seq->last + 1;
-            DB::table('v3_sequences')->where('id', $seq->id)->update(['last' => $number]);
             $roman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][(int) substr($data['tanggal'], 5, 2) - 1];
-            $nomor = strtoupper($kind).'-'.str_pad((string) $number, 3, '0', STR_PAD_LEFT).'/'.$s->kode_surat.'/'.$s->kode_sekolah.'/'.$roman.'/'.$year;
-            $snapshot = ['template_version' => 2, 'school' => $school, 'purchase' => $p->toArray(), 'inspection' => $inspection, 'tanggal_lunas' => $data['tanggal_lunas'] ?? null, 'catatan' => $data['catatan'] ?? '', 'nopes_nomor' => $n?->nomor, 'bapb_nomor' => $b?->nomor];
+            do {
+                $nomor = 'B-'.$number.'/'.$s->kode_surat.'/'.$s->kode_sekolah.'/'.$roman.'/'.$year;
+                $exists = Document::where('school_profile_id', $s->id)->where('nomor', $nomor)->exists();
+                if ($exists) { $number++; }
+            } while ($exists);
+            DB::table('v3_sequences')->where('id', $seq->id)->update(['last' => $number]);
+            $snapshot = ['template_version' => 2, 'payment_confirmed' => $kind === 'kuitansi', 'school' => $school, 'purchase' => $p->toArray(), 'inspection' => $inspection, 'tanggal_lunas' => $data['tanggal_lunas'] ?? null, 'catatan' => $data['catatan'] ?? '', 'nopes_nomor' => $n?->nomor, 'bapb_nomor' => $b?->nomor];
             $doc = Document::create(['purchase_id' => $p->id, 'school_profile_id' => $s->id, 'jenis' => $kind, 'nomor' => $nomor, 'tanggal' => $data['tanggal'], 'versi' => ($p->documents()->where('jenis', $kind)->max('versi') ?? 0) + 1, 'revision' => $p->revision, 'snapshot' => $snapshot, 'created_by' => auth()->id()]);
             self::event('terbit_'.$kind, $p, null, ['document_id' => $doc->id, 'nomor' => $nomor]);
 
@@ -174,6 +189,9 @@ return $q->findOrFail($id);
                 if (! DB::table('v3_attachments')->where('purchase_id', $id)->where('revision',$p->revision)->where('is_active',true)->exists()) {
                     throw ValidationException::withMessages(['status' => 'Unggah minimal satu bukti transaksi.']);
                 }
+                if ($missing = LpjReadiness::missing($p)) {
+                    throw ValidationException::withMessages(['status'=>implode(' ', $missing)]);
+                }
                 $p->status = 'diajukan';
                 $p->submitted_by = $u->id;
                 $p->submitted_at = now();
@@ -182,6 +200,9 @@ return $q->findOrFail($id);
                 abort_unless($p->status === ($action === 'buka' ? 'disetujui' : 'diajukan'), 409);
                 if ($action === 'setujui') {
                     abort_if($p->created_by === $u->id || $p->submitted_by === $u->id, 403, 'Pemeriksa harus berbeda dari pembuat/pengaju.');
+                    if ($missing = LpjReadiness::missing($p)) {
+                        throw ValidationException::withMessages(['status'=>implode(' ', $missing)]);
+                    }
                     $p->status = 'disetujui';
                     $p->approved_by = $u->id;
                     $p->approved_at = now();

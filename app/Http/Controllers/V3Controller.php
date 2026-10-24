@@ -16,6 +16,7 @@ class V3Controller extends SchoolController
         if ($r->user()->role === 'kepala_sekolah') {
             return redirect()->route('v3.approvals');
         }
+        $r->validate(['show_archived'=>'nullable|boolean']);
         $years = Budget::where('school_profile_id', $this->sid())->distinct()->orderByDesc('tahun')->pluck('tahun')->map(fn ($year) => (int) $year);
         if ($years->isEmpty()) {
             $years = collect([(int) date('Y')]);
@@ -34,6 +35,7 @@ class V3Controller extends SchoolController
         $r->session()->put($yearKey, $selectedYear);
 
         $q = Activity::where('school_profile_id', $this->sid())->whereHas('budget', fn ($q) => $q->where('tahun', $selectedYear))->with('budget')->withCount('purchases')->withSum(['purchases' => fn ($q) => $q->where('status', '!=', 'dibatalkan')], 'bruto');
+        if(!$r->boolean('show_archived')) $q->where('is_archived',false);
         if ($r->filled('q')) {
             $q->where('nama', 'like', '%'.mb_substr($r->input('q'), 0, 100).'%');
         }
@@ -57,6 +59,6 @@ class V3Controller extends SchoolController
         $budgetSummary['remaining'] = bcsub($budgetSummary['total'], $budgetSummary['used'], 2);
         $budgetSummary['percentage'] = bccomp($budgetSummary['total'], '0', 2) > 0 ? bcdiv(bcmul($budgetSummary['used'], '100', 4), $budgetSummary['total'], 2) : null;
 
-        return view('v3.index', ['activities' => $q->latest()->paginate(15)->appends(['tahun' => $selectedYear, 'q' => $r->input('q')]), 'years' => $years, 'selectedYear' => $selectedYear, 'budgets' => $budgets, 'budgetSummary' => $budgetSummary, 'counts' => Purchase::where('school_profile_id', $this->sid())->whereHas('activity.budget',fn ($q) => $q->where('tahun',$selectedYear))->selectRaw('status,count(*) as total')->groupBy('status')->pluck('total','status')]);
+        return view('v3.index', ['activities' => $q->latest()->paginate(15)->appends(['tahun' => $selectedYear, 'q' => $r->input('q'), 'show_archived'=>$r->boolean('show_archived')?1:0]), 'years' => $years, 'selectedYear' => $selectedYear, 'budgets' => $budgets, 'budgetSummary' => $budgetSummary, 'counts' => Purchase::where('school_profile_id', $this->sid())->whereHas('activity.budget',fn ($q) => $q->where('tahun',$selectedYear))->selectRaw('status,count(*) as total')->groupBy('status')->pluck('total','status')]);
     }
 }

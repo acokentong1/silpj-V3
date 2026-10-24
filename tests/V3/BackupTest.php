@@ -35,6 +35,18 @@ class BackupTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_daily_backup_skips_existing_and_recreates_missing_archive(): void
+    {
+        $this->assertSame(0, Artisan::call('silpj:backup-due'));
+        $files = glob($this->temporary.'/app/private/v3-backups/*.zip');
+        $this->assertCount(1, $files);
+        $this->assertSame(0, Artisan::call('silpj:backup-due'));
+        $this->assertSame($files, glob($this->temporary.'/app/private/v3-backups/*.zip'));
+        unlink($files[0]);
+        $this->assertSame(0, Artisan::call('silpj:backup-due'));
+        $this->assertCount(1, glob($this->temporary.'/app/private/v3-backups/*.zip'));
+    }
+
     public function test_backup_roundtrip_restores_database_assets_and_cleans_temporary_files(): void
     {
         $service = app(BackupService::class);
