@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?php echo $__env->yieldContent('title','Kegiatan'); ?> · SILPJ V3</title>
 <link rel="stylesheet" href="<?php echo e(asset('v3.css')); ?>?v=3">
-<script src="<?php echo e(asset('rupiah.js')); ?>?v=1" defer>
+<script src="<?php echo e(asset('rupiah.js')); ?>?v=2" defer>
 </script>
 <script src="<?php echo e(asset('v3.js')); ?>?v=6" defer>
 </script>

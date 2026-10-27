@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded',()=>{
    itemRows.forEach((r,i)=>r.querySelector('[data-amount]').textContent=money(result.amounts[i]));rows.forEach((r,i)=>r.querySelector('[data-component-amount]').textContent=money(result.componentAmounts[i]));
    ['subtotal','add','bruto','potong','netto','tax'].forEach(k=>form.querySelector('#sum-'+k).textContent=money(result[k]));
    if(result.netto<0n||result.bruto>99999999999999n){const message=result.netto<0n?'Potongan melebihi nilai bruto. Periksa tab Pajak & biaya.':'Nilai transaksi melebihi batas.';error.textContent=message;error.hidden=false;field(itemRows[0],'harga').setCustomValidity(message);}
-  }catch(e){error.textContent='Periksa angka pada rincian dan komponen. Gunakan koma untuk desimal rupiah.';error.hidden=false;field(itemRows[0],'harga').setCustomValidity(error.textContent);}
+  }catch(e){error.textContent='Periksa angka pada rincian dan komponen. Nominal rupiah harus bulat tanpa desimal.';error.hidden=false;field(itemRows[0],'harga').setCustomValidity(error.textContent);}
  }
  form.querySelector('#add-item').addEventListener('click',()=>{if(items.children.length>=200)return;const row=items.querySelector('[data-item]').cloneNode(true);row.querySelectorAll('input').forEach(e=>{e.value=e.dataset.field==='volume'?'1':e.dataset.field==='harga'?'0':'';e.setCustomValidity('');});items.append(row);index();calc();row.querySelector('input').focus();});
  form.querySelector('#add-component').addEventListener('click',()=>{if(components.children.length>=30)return;components.append(form.querySelector('#component-template').content.cloneNode(true));index();calc();components.lastElementChild.querySelector('input').focus();});

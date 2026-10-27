@@ -54,6 +54,10 @@ return $q->findOrFail($id);
             }
             abort_if($activity->is_archived,422,'Kegiatan sudah diarsipkan.');
             $calc = V3Calculator::calculate($data['items'], $data['components'] ?? []);
+            if ($id && $this->unchanged($p, $data, $calc)) {
+                return $p;
+            }
+            if ($id) $this->reason($data['reason'] ?? null);
             $used = Purchase::whereHas('activity', fn ($q) => $q->where('budget_id', $budget->id))->where('status', '!=', 'dibatalkan')->when($id, fn ($q) => $q->where('id', '!=', $id))->select('id', 'bruto')->lazyById(500)->pluck('bruto')->reduce(fn ($carry, $v) => bcadd($carry, (string) $v, 2), '0');
             if (bccomp(bcadd($used, $calc['totals']['bruto'], 2), (string) $budget->nilai, 2) > 0) {
                 throw ValidationException::withMessages(['items' => 'Nilai bruto melebihi sisa anggaran. Draf juga mencadangkan anggaran.']);
@@ -87,6 +91,36 @@ return $q->findOrFail($id);
     public static function current(Purchase $p, string $kind): ?Document
     {
         return $p->documents()->where('jenis', $kind)->where('revision', $p->revision)->where('status', 'terbit')->first();
+    }
+
+    private function unchanged(Purchase $p, array $data, array $calc): bool
+    {
+        $p->load('items', 'components', 'vendor');
+        foreach (['nomor_bukti', 'tanggal', 'kategori'] as $key) {
+            if ((string)$p->$key !== (string)$data[$key]) return false;
+        }
+        foreach (['nama', 'alamat', 'penerima', 'npwp'] as $key) {
+            if ((string)$p->vendor->$key !== (string)($data['vendor_'.$key] ?? '')) return false;
+        }
+        foreach ($calc['totals'] as $key => $value) {
+            if (bccomp((string)$p->$key, (string)$value, 2) !== 0) return false;
+        }
+        return $this->sameRows($p->items, $calc['items'], ['urutan'=>0, 'volume'=>3, 'harga'=>2, 'jumlah'=>2])
+            && $this->sameRows($p->components, $calc['components'], ['persentase'=>4, 'dasar'=>2, 'nominal'=>2]);
+    }
+
+    private function sameRows($stored, array $incoming, array $numeric): bool
+    {
+        if ($stored->count() !== count($incoming)) return false;
+        foreach (array_values($incoming) as $i => $row) {
+            foreach ($row as $key => $value) {
+                $old = $stored[$i]->$key;
+                if (isset($numeric[$key]) && $value !== null && $old !== null) {
+                    if (bccomp((string)$old, (string)$value, $numeric[$key]) !== 0) return false;
+                } elseif ((string)$old !== (string)$value) return false;
+            }
+        }
+        return true;
     }
 
     public function issue(int $id, array $data): Document

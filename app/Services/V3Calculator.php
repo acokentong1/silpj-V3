@@ -6,6 +6,14 @@ use Illuminate\Validation\ValidationException;
 
 class V3Calculator
 {
+    public static function whole(string $value): string
+    {
+        if (! preg_match('/^\d+(?:\.0+)?$/D', $value)) {
+            throw ValidationException::withMessages(['items' => 'Nominal rupiah harus bulat tanpa desimal.']);
+        }
+        return bcadd($value, '0', 0);
+    }
+
     // Decimal arithmetic with BCMath; values returned as whole rupiah strings.
     public static function round(string $value): string
     {
@@ -21,11 +29,17 @@ class V3Calculator
         $out = [];
         $comp = [];
         foreach ($items as $i => $item) {
+            $item['harga'] = self::whole((string) $item['harga']);
             $amount = self::round(bcmul((string) $item['volume'], (string) $item['harga'], 5));
             $subtotal = bcadd($subtotal, $amount, 0);
             $out[] = ['urutan' => $i + 1, 'nama' => $item['nama'], 'volume' => $item['volume'], 'satuan' => $item['satuan'], 'harga' => $item['harga'], 'jumlah' => $amount];
         }
         foreach ($components as $c) {
+            if ($c['metode'] === 'persentase') {
+                $c['dasar'] = self::whole((string) $c['dasar']);
+            } else {
+                $c['nominal'] = self::whole((string) $c['nominal']);
+            }
             $amount = $c['metode'] === 'persentase' ? self::round(bcdiv(bcmul((string) $c['dasar'], (string) $c['persentase'], 6), '100', 6)) : self::round((string) $c['nominal']);
             $comp[] = ['label' => $c['label'], 'kategori' => $c['kategori'], 'metode' => $c['metode'], 'persentase' => $c['metode'] === 'persentase' ? $c['persentase'] : null, 'dasar' => $c['metode'] === 'persentase' ? $c['dasar'] : null, 'nominal' => $amount, 'perlakuan' => $c['perlakuan']];
             if ($c['perlakuan'] === 'tambah') {

@@ -39,7 +39,7 @@ class FinalReportController extends SchoolController {
   $attachments=DB::table('v3_attachments')->whereIn('purchase_id',$rows->pluck('id'))->where('is_active',true)->get()->groupBy('purchase_id');
   $total=['bruto'=>'0.00','netto'=>'0.00','potongan'=>'0.00']; $documents=collect(); $evidence=collect();
   foreach($rows as $p) {
-   if($archiveId && ($missing=\App\Services\LpjReadiness::missing($p))) throw ValidationException::withMessages(['laporan'=>$p->nomor_bukti.': '.implode(' ',$missing)]);
+   if($missing=\App\Services\LpjReadiness::missing($p)) throw ValidationException::withMessages(['laporan'=>$p->nomor_bukti.': '.implode(' ',$missing)]);
    foreach(['nopes','bapb','kuitansi'] as $kind) {
     $doc=$p->documents->where('jenis',$kind)->where('status','terbit')->where('revision',$p->revision)->first();
     if(!$doc) throw ValidationException::withMessages(['laporan'=>'Transaksi '.$p->nomor_bukti.' belum memiliki dokumen aktif lengkap.']);

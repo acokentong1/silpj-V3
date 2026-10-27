@@ -60,9 +60,9 @@ class PurchaseController extends SchoolController
 
     private function data(Request $r, bool $edit): array
     {
-        $d = $r->validate(['expected_revision' => ($edit ? 'required' : 'nullable').'|integer|min:1', 'nomor_bukti' => 'required|string|max:100', 'tanggal' => 'required|date_format:Y-m-d', 'kategori' => 'required|in:Barang,Jasa', 'vendor_nama' => 'required|string|max:255', 'vendor_alamat' => 'nullable|string|max:1000', 'vendor_penerima' => 'required|string|max:255', 'vendor_npwp' => 'nullable|string|max:50', 'reason' => ($edit ? 'required' : 'nullable').'|string|min:5|max:2000',
-            'items' => 'required|array|min:1|max:200', 'items.*.nama' => 'required|string|max:255', 'items.*.volume' => 'required|numeric|min:0.001|max:1000000|decimal:0,3', 'items.*.satuan' => 'required|string|max:40', 'items.*.harga' => 'required|numeric|min:0|max:1000000000|decimal:0,2',
-            'components' => 'nullable|array|max:30', 'components.*.label' => 'required|string|max:60', 'components.*.kategori' => 'required|in:pajak,lainnya', 'components.*.metode' => 'required|in:nominal,persentase', 'components.*.persentase' => 'nullable|numeric|min:0|max:100|decimal:0,4', 'components.*.dasar' => 'nullable|numeric|min:0|max:99999999999999|decimal:0,2', 'components.*.nominal' => 'nullable|numeric|min:0|max:99999999999999|decimal:0,2', 'components.*.perlakuan' => 'required|in:tambah,potong,termasuk']);
+        $d = $r->validate(['expected_revision' => ($edit ? 'required' : 'nullable').'|integer|min:1', 'nomor_bukti' => 'required|string|max:100', 'tanggal' => 'required|date_format:Y-m-d', 'kategori' => 'required|in:Barang,Jasa', 'vendor_nama' => 'required|string|max:255', 'vendor_alamat' => 'nullable|string|max:1000', 'vendor_penerima' => 'required|string|max:255', 'vendor_npwp' => 'nullable|string|max:50', 'reason' => 'nullable|string|min:5|max:2000',
+            'items' => 'required|array|min:1|max:200', 'items.*.nama' => 'required|string|max:255', 'items.*.volume' => 'required|numeric|min:0.001|max:1000000|decimal:0,3', 'items.*.satuan' => 'required|string|max:40', 'items.*.harga' => ['required', 'numeric', 'min:0', 'max:1000000000', new \App\Rules\WholeRupiah],
+            'components' => 'nullable|array|max:30', 'components.*.label' => 'required|string|max:60', 'components.*.kategori' => 'required|in:pajak,lainnya', 'components.*.metode' => 'required|in:nominal,persentase', 'components.*.persentase' => 'nullable|numeric|min:0|max:100|decimal:0,4', 'components.*.dasar' => ['nullable', 'numeric', 'min:0', 'max:99999999999999', new \App\Rules\WholeRupiah], 'components.*.nominal' => ['nullable', 'numeric', 'min:0', 'max:99999999999999', new \App\Rules\WholeRupiah], 'components.*.perlakuan' => 'required|in:tambah,potong,termasuk']);
         foreach ($d['components'] ?? [] as $c) {
             foreach ($c['metode'] === 'persentase' ? ['persentase', 'dasar'] : ['nominal'] as $key) {
                 if (! isset($c[$key])) {
@@ -132,6 +132,8 @@ class PurchaseController extends SchoolController
         abort_unless($f, 404);
         V3Workflow::purchase($f->purchase_id);
 
+        abort_unless(Storage::disk('local')->exists($f->path), 404, 'Berkas bukti tidak ditemukan.');
+        abort_unless(\App\Services\LpjReadiness::validFile($f), 409, 'Berkas bukti berubah atau rusak. Periksa bukti asli.');
         return Storage::disk('local')->download($f->path, $f->name, ['X-Content-Type-Options' => 'nosniff']);
     }
 }

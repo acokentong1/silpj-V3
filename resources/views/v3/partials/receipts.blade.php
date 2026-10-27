@@ -5,7 +5,7 @@
 @endphp
 <section class="card">
 <h2>{{ $p->kategori==='Jasa'?'Progres pekerjaan bertahap':'Penerimaan barang bertahap' }}</h2>
-<p class="muted">Catat setiap kedatangan. BAPB akhir memakai jumlah kumulatif setelah seluruh pesanan diterima. Mengubah transaksi atau mengganti nota pesanan memulai pencatatan penerimaan baru; tahap lama tetap tersimpan dalam riwayat.</p>
+<p class="muted">Opsional: gunakan jika barang/pekerjaan diterima bertahap. Untuk penerimaan sekaligus, langsung isi pemeriksaan pada Dokumen LPJ. Catat setiap kedatangan. BAPB akhir memakai jumlah kumulatif setelah seluruh pesanan diterima. Mengubah transaksi atau mengganti nota pesanan memulai pencatatan penerimaan baru; tahap lama tetap tersimpan dalam riwayat.</p>
 @foreach($batches as $batch)
 <details>
 <summary>Tahap {{ $loop->iteration }} · {{ $batch->tanggal }}</summary>

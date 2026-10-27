@@ -37,7 +37,7 @@ class ReportController extends SchoolController
             fputcsv($f, ['Kegiatan', 'Tahun', 'Sumber dana', 'Nomor bukti', 'Tanggal', 'Rekanan', 'Subtotal', 'Bruto', 'Potongan', 'Netto', 'Status'], ';');
             ReportQuery::query($sid, $filters)->orderBy('id')->chunk(200, function ($rows) use ($f) {
                 foreach ($rows as $p) {
-                    $values = [$p->activity->nama, $p->tahun, $p->activity->budget->sumber_dana, $p->nomor_bukti, $p->tanggal, $p->vendor->nama, $p->subtotal, $p->bruto, $p->potongan, $p->netto, $p->status];
+                    $values = [$p->activity->nama, $p->tahun, $p->activity->budget->sumber_dana, $p->nomor_bukti, $p->tanggal, $p->vendor->nama, \App\Services\V3Calculator::round((string) $p->subtotal), \App\Services\V3Calculator::round((string) $p->bruto), \App\Services\V3Calculator::round((string) $p->potongan), \App\Services\V3Calculator::round((string) $p->netto), $p->status];
                     $values = array_map(fn ($v) => preg_match('/^[=+@\-\t\r]/u', (string) $v) ? "'".$v : $v, $values);
                     fputcsv($f, $values, ';');
                 }

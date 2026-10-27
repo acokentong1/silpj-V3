@@ -76,7 +76,8 @@ class OperationalControlsTest extends TestCase
     public function test_evidence_requires_confirmation_after_revision(): void {
         $p=$this->purchase();
         $this->post(route('v3.upload',$p->id),['category'=>'nota','file'=>UploadedFile::fake()->create('proof.pdf',1,'application/pdf')])->assertSessionHasNoErrors();
-        app(V3Workflow::class)->save($this->activity,$this->payload()+['reason'=>'Koreksi dokumen'],$p->id);
+        $changed=$this->payload()+['reason'=>'Koreksi dokumen']; $changed['vendor_alamat']='Alamat diperbaiki';
+        app(V3Workflow::class)->save($this->activity,$changed,$p->id);
         $p->refresh(); $this->issueAll($p);
         $this->post(route('v3.transition',$p->id),['action'=>'ajukan'])->assertSessionHasErrors('status');
         $id=DB::table('v3_attachments')->value('id');

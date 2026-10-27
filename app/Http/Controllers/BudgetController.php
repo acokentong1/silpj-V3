@@ -22,7 +22,7 @@ class BudgetController extends SchoolController
     public function budgetSave(Request $r)
     {
         $this->editor();
-        $d = $r->validate(['tahun' => 'required|integer|between:2000,2100', 'sumber_dana' => 'required|string|max:100', 'nilai' => 'required|numeric|min:0|max:99999999999999|decimal:0,2']);
+        $d = $r->validate(['tahun' => 'required|integer|between:2000,2100', 'sumber_dana' => 'required|string|max:100', 'nilai' => ['required', 'numeric', 'min:0', 'max:99999999999999', new \App\Rules\WholeRupiah]]);
         DB::transaction(function () use ($d) {
             SchoolProfile::whereKey($this->sid())->lockForUpdate()->firstOrFail();
             $b = Budget::firstOrNew(['school_profile_id' => $this->sid(), 'tahun' => $d['tahun'], 'sumber_dana' => $d['sumber_dana']]);
@@ -54,7 +54,7 @@ class BudgetController extends SchoolController
         DB::transaction(function () use ($r, $id) {
             SchoolProfile::whereKey($this->sid())->lockForUpdate()->firstOrFail();
             $b = Budget::where('school_profile_id', $this->sid())->lockForUpdate()->findOrFail($id);
-            $d = $r->validate(['tahun' => 'required|integer|between:2000,2100', 'sumber_dana' => ['required', 'string', 'max:100', Rule::unique('v3_budgets', 'sumber_dana')->where(fn ($q) => $q->where('school_profile_id', $this->sid())->where('tahun', $r->input('tahun')))->ignore($b->id)], 'nilai' => 'required|numeric|min:0|max:99999999999999|decimal:0,2']);
+            $d = $r->validate(['tahun' => 'required|integer|between:2000,2100', 'sumber_dana' => ['required', 'string', 'max:100', Rule::unique('v3_budgets', 'sumber_dana')->where(fn ($q) => $q->where('school_profile_id', $this->sid())->where('tahun', $r->input('tahun')))->ignore($b->id)], 'nilai' => ['required', 'numeric', 'min:0', 'max:99999999999999', new \App\Rules\WholeRupiah]]);
             $purchases = Purchase::whereHas('activity', fn ($q) => $q->where('budget_id', $b->id));
             if ((clone $purchases)->exists() && ((int) $d['tahun'] !== (int) $b->tahun || $d['sumber_dana'] !== $b->sumber_dana)) {
                 throw ValidationException::withMessages(['tahun' => 'Tahun dan sumber dana tidak dapat diubah karena anggaran sudah memiliki transaksi. Nilai anggaran tetap dapat diperbarui.']);

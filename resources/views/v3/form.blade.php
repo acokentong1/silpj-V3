@@ -3,8 +3,8 @@
 @section('title',$p?'Ubah transaksi belanja':'Tambah transaksi belanja')
 @push('page-assets')
 <link rel="stylesheet" href="{{ asset('transaction-editor.css') }}?v=1">
-<script src="{{ asset('transaction-math.js') }}?v=1" defer></script>
-<script src="{{ asset('transaction-editor.js') }}?v=1" defer></script>
+<script src="{{ asset('transaction-math.js') }}?v=2" defer></script>
+<script src="{{ asset('transaction-editor.js') }}?v=2" defer></script>
 @endpush
 @section('content')
 <p>
@@ -19,6 +19,7 @@
 <section class="card">
 <h2>
 <span class="section-num">1</span>Identitas transaksi & rekanan</h2>
+<p class="muted">Nominal uang menggunakan rupiah bulat tanpa desimal. Volume barang menggunakan bilangan bulat; persentase tetap dapat berupa pecahan. Jika data lama memiliki pecahan rupiah, periksa dan koreksi sebelum menyimpan.</p>
 <div class="grid">
 <label>Nomor bukti<input name="nomor_bukti" required maxlength="100" value="{{ old('nomor_bukti',$p?->nomor_bukti) }}">
 </label>
@@ -65,13 +66,13 @@
 <input aria-label="Nama barang" data-field="nama" name="items[{{ $i }}][nama]" value="{{ $item['nama'] }}" required maxlength="255">
 </td>
 <td>
-<input aria-label="Volume" data-field="volume" name="items[{{ $i }}][volume]" type="number" min="0.001" max="1000000" step="0.001" value="{{ $item['volume'] }}" required>
+<input aria-label="Volume" data-field="volume" name="items[{{ $i }}][volume]" type="number" min="1" max="1000000" step="1" value="{{ $item['volume'] }}" required>
 </td>
 <td>
 <input aria-label="Satuan" data-field="satuan" name="items[{{ $i }}][satuan]" value="{{ $item['satuan'] }}" required maxlength="40">
 </td>
 <td>
-<input aria-label="Harga satuan" data-field="harga" name="items[{{ $i }}][harga]" type="number" data-rupiah min="0" max="1000000000" step="0.01" value="{{ $item['harga'] }}" required>
+<input aria-label="Harga satuan" data-field="harga" name="items[{{ $i }}][harga]" type="number" data-rupiah min="0" max="1000000000" step="1" value="{{ $item['harga'] }}" required>
 </td>
 <td class="number" data-amount>0</td>
 <td>
@@ -122,7 +123,7 @@
 </div>
 </section>
 @if($p)<section class="card">
-<label>Alasan perubahan<textarea name="reason" required minlength="5" maxlength="2000">{{ old('reason') }}</textarea>
+<label>Alasan perubahan (wajib jika data berubah)<textarea name="reason" minlength="5" maxlength="2000">{{ old('reason') }}</textarea>
 </label>
 <p class="muted">Dokumen terbit sebelumnya menjadi arsip. Terbitkan kembali dokumen berdasarkan rincian terbaru.</p>
 </section>

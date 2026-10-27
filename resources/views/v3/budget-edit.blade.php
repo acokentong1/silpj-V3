@@ -16,7 +16,7 @@
 </label>
 <label>Sumber dana<input name="sumber_dana" maxlength="100" value="{{ $hasPurchases?$b->sumber_dana:old('sumber_dana',$b->sumber_dana) }}" required @readonly($hasPurchases)>
 </label>
-<label>Nilai anggaran (Rp)<input type="number" data-rupiah min="0" max="99999999999999" step="0.01" name="nilai" value="{{ old('nilai',$b->nilai) }}" required>
+<label>Nilai anggaran (Rp)<input type="number" data-rupiah min="0" max="99999999999999" step="1" name="nilai" value="{{ old('nilai',$b->nilai) }}" required>
 </label>
 </div>
 <p class="actions">

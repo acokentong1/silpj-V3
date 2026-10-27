@@ -97,7 +97,7 @@
 </div>
 @if($kind==='bapb')<div class="document-form-section">
 <h3>Hasil pemeriksaan {{ $p->kategori==='Jasa'?'pekerjaan':'barang' }}</h3>
-<p class="document-field-help">Jumlah baik dan tidak baik harus sama dengan volume pesanan. Temuan tidak baik harus diselesaikan sebelum kuitansi dan pengajuan LPJ. Jika tahap penerimaan sudah dicatat, sistem memakai total tahap tersebut dan mengabaikan isian jumlah di bawah.</p>
+<p class="document-field-help">Jumlah baik dan tidak baik harus sama dengan volume pesanan. Temuan tidak baik harus diselesaikan sebelum kuitansi dan pengajuan LPJ. Jika tahap penerimaan sudah dicatat, jumlah di bawah terkunci mengikuti total tahap tersebut; lakukan koreksi pada tab Penerimaan.</p>
 <div class="table-wrap document-inspection">
 <table>
 <thead>
@@ -116,10 +116,10 @@
 <small>{{ (float)$item->volume }} {{ $item->satuan }}</small>
 </td>
 <td>
-<input aria-label="Volume baik {{ $item->nama }}" name="inspection[{{ $item->urutan }}][baik]" type="number" min="0" max="1000000" step="0.001" required value="{{ old('inspection.'.$item->urutan.'.baik',$received[$item->urutan]['baik']??$item->volume) }}">
+<input aria-label="Volume baik {{ $item->nama }}" name="inspection[{{ $item->urutan }}][baik]" type="number" min="0" max="1000000" step="0.001" required @readonly($batches->isNotEmpty()) value="{{ old('inspection.'.$item->urutan.'.baik',$received[$item->urutan]['baik']??$item->volume) }}">
 </td>
 <td>
-<input aria-label="Volume tidak baik {{ $item->nama }}" name="inspection[{{ $item->urutan }}][rusak]" type="number" min="0" max="1000000" step="0.001" required value="{{ old('inspection.'.$item->urutan.'.rusak',$received[$item->urutan]['rusak']??0) }}">
+<input aria-label="Volume tidak baik {{ $item->nama }}" name="inspection[{{ $item->urutan }}][rusak]" type="number" min="0" max="1000000" step="0.001" required @readonly($batches->isNotEmpty()) value="{{ old('inspection.'.$item->urutan.'.rusak',$received[$item->urutan]['rusak']??0) }}">
 </td>
 <td>
 <input aria-label="Catatan pemeriksaan {{ $item->nama }}" name="inspection[{{ $item->urutan }}][catatan]" maxlength="255" placeholder="Opsional" value="{{ old('inspection.'.$item->urutan.'.catatan') }}">

@@ -14,7 +14,8 @@
 <body>
 @if(!request()->boolean('pdf'))
 @php
- $previewTitle = ['nopes'=>'Nota Pesanan Barang', 'bapb'=>'Berita Acara Pemeriksaan Barang', 'kuitansi'=>'Kuitansi'][$doc->jenis] ?? 'Dokumen';
+ $previewService = ($doc->snapshot['template_version'] ?? 1) >= 2 && ($doc->snapshot['purchase']['kategori'] ?? '') === 'Jasa';
+ $previewTitle = ['nopes'=>$previewService ? 'Nota Pesanan Jasa' : 'Nota Pesanan Barang', 'bapb'=>$previewService ? 'Berita Acara Pemeriksaan Pekerjaan' : 'Berita Acara Pemeriksaan Barang', 'kuitansi'=>'Kuitansi'][$doc->jenis] ?? 'Dokumen';
 @endphp
 <header class="preview-toolbar">
  <div class="preview-toolbar-inner">

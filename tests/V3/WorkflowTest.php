@@ -486,7 +486,7 @@ class WorkflowTest extends TestCase
         }
         $this->get(route('dashboard'))->assertOk()->assertViewHas('budgetSummary', fn ($summary) => $summary['used'] === '50.20');
         $this->post(route('v3.budgets.save'), ['tahun' => 2026, 'sumber_dana' => 'BOS', 'nilai' => '50.19'])->assertSessionHasErrors('nilai');
-        $this->post(route('v3.budgets.save'), ['tahun' => 2026, 'sumber_dana' => 'BOS', 'nilai' => '50.20'])->assertSessionHasNoErrors();
+        $this->post(route('v3.budgets.save'), ['tahun' => 2026, 'sumber_dana' => 'BOS', 'nilai' => '51'])->assertSessionHasNoErrors();
     }
 
     public function test_submission_migration_backfills_only_actual_event_times(): void

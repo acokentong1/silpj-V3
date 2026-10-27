@@ -1,26 +1,32 @@
 "use strict";
-// Display Indonesian amounts while submitting ordinary decimal strings to Laravel.
+// Whole-rupiah inputs: Indonesian grouping on screen, integer strings on submit.
 window.RupiahInput = (() => {
  const selector='input[data-rupiah]';
- const canonical=value=>String(value).replace(/^\s*Rp\s*/i,'').replace(/\s/g,'').replace(/\./g,'').replace(',','.');
+ const canonical=value=>{
+  const text=String(value).replace(/^\s*Rp\s*/i,'').replace(/\s/g,'');
+  if (/^\d+$/.test(text) || /^\d{1,3}(?:\.\d{3})+$/.test(text)) return text.replace(/\./g,'');
+  return text; // Invalid decimals/grouping stay invalid, never turn 100,50 into 10050.
+ };
  const display=value=>{
   if(value==='')return '';
   const [whole,fraction]=String(value).split('.');
   const grouped=whole.replace(/^0+(?=\d)/,'').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
-  return grouped+(fraction===undefined?'':','+fraction);
+  return grouped+(fraction===undefined||/^0*$/.test(fraction)?'':','+fraction); // Keep legacy fractions visible for explicit correction.
  };
  function validate(input){
   const raw=canonical(input.value);
   let error='';
-  if(raw!==''&&!/^\d+(?:\.\d{0,2})?$/.test(raw))error='Gunakan angka, titik untuk ribuan, dan koma untuk desimal (contoh: 2.000,50).';
+  if(raw!==''&&!/^\d+$/.test(raw))error='Gunakan rupiah bulat tanpa desimal, contoh: 100000 atau 100.000.';
   else if(raw!==''&&Number(raw)>Number(input.dataset.rupiahMax))error='Nominal maksimal Rp'+display(input.dataset.rupiahMax)+'.';
   input.setCustomValidity(error);
  }
- function format(input){
+ function format(input,inputType){
   const position=input.selectionStart??input.value.length;
   const count=input.value.slice(0,position).replace(/[^\d,]/g,'').length;
-  const raw=canonical(input.value);
-  if(/^\d+(?:\.\d{0,2})?$/.test(raw)){
+  let raw=canonical(input.value);
+  // Ordinary editing can temporarily break thousands groups; pasted malformed values stay invalid.
+  if ((inputType==='insertText'||String(inputType).startsWith('delete')) && /^[\d.]+$/.test(input.value)) raw=input.value.replace(/\./g,'');
+  if(/^\d+$/.test(raw)){
    input.value=display(raw);
    let cursor=0,seen=0;
    while(cursor<input.value.length&&seen<count){if(/[\d,]/.test(input.value[cursor]))seen++;cursor++;}
@@ -33,17 +39,17 @@ window.RupiahInput = (() => {
    if(input.type==='number'){
     const value=input.value;
     input.dataset.rupiahMax=input.max;
-    input.type='text';input.inputMode='decimal';
+    input.type='text';input.inputMode='numeric';
     input.removeAttribute('min');input.removeAttribute('max');input.removeAttribute('step');
     input.value=display(value);
-    input.title='Format rupiah: 2.000 atau 2.000,50';
+    input.title='Rupiah bulat tanpa desimal, contoh: 100.000';
    }
    validate(input);
   });
  }
  document.addEventListener('DOMContentLoaded',()=>{
   init();
-  document.addEventListener('input',event=>{if(event.target.matches(selector))format(event.target);},true);
+  document.addEventListener('input',event=>{if(event.target.matches(selector))format(event.target,event.inputType);},true);
   document.addEventListener('beforeinput',event=>{
    const input=event.target;
    if(!input.matches(selector)||input.selectionStart!==input.selectionEnd)return;
@@ -54,7 +60,6 @@ window.RupiahInput = (() => {
   });
   document.addEventListener('focusout',event=>{
    const input=event.target;if(!input.matches(selector))return;
-   if(input.value.endsWith(','))input.value=input.value.slice(0,-1);
    validate(input);
   });
   document.querySelectorAll('form').forEach(form=>form.addEventListener('formdata',event=>{

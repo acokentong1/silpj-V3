@@ -34,7 +34,7 @@ class V3Export extends DefaultValueBinder implements FromQuery, WithCustomValueB
     {
         if (in_array($cell->getColumn(), ['G','H','I','J']) && is_numeric($value)) {
             $cell->setValueExplicit($value, DataType::TYPE_NUMERIC);
-            $cell->getStyle()->getNumberFormat()->setFormatCode('#,##0.00');
+            $cell->getStyle()->getNumberFormat()->setFormatCode('#,##0');
             return true;
         }
         if (is_string($value)) {

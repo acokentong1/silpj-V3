@@ -16,12 +16,12 @@
 @endforeach
 </select>
 </label>
-<label data-mode="nominal">Nominal (Rp)<input data-field="nominal" name="components[{{ $i }}][nominal]" type="number" data-rupiah min="0" max="99999999999999" step="0.01" value="{{ $c['nominal']??0 }}">
+<label data-mode="nominal">Nominal (Rp)<input data-field="nominal" name="components[{{ $i }}][nominal]" type="number" data-rupiah min="0" max="99999999999999" step="1" value="{{ $c['nominal']??0 }}">
 </label>
 <label data-mode="persentase">Persentase (%)<input data-field="persentase" name="components[{{ $i }}][persentase]" type="number" min="0" max="100" step="0.0001" value="{{ $c['persentase']??'' }}">
 </label>
 <label data-mode="persentase">Sumber dasar<select data-base-mode><option value="auto" @selected(!isset($c['dasar']))>Subtotal barang / jasa</option><option value="manual" @selected(isset($c['dasar']))>Isi dasar sendiri</option></select></label>
-<label data-mode="persentase">Dasar perhitungan (Rp)<input data-field="dasar" name="components[{{ $i }}][dasar]" type="number" data-rupiah min="0" max="99999999999999" step="0.01" value="{{ $c['dasar']??'' }}">
+<label data-mode="persentase">Dasar perhitungan (Rp)<input data-field="dasar" name="components[{{ $i }}][dasar]" type="number" data-rupiah min="0" max="99999999999999" step="1" value="{{ $c['dasar']??'' }}">
 </label>
 <div class="actions component-result">
 <strong data-component-amount>Rp0</strong>

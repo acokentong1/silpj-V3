@@ -141,4 +141,105 @@ class LpjImprovementsTest extends TestCase
         $this->get(route('v3.activity',$this->activity->id))->assertOk()->assertViewHas('purchases',fn($q)=>$q->total()===23 && $q->count()===20);
         $this->get(route('v3.activity',[$this->activity->id,'q'=>'PAGE-23']))->assertOk()->assertViewHas('purchases',fn($q)=>$q->total()===1);
     }
+    public function test_whole_rupiah_is_required_but_fractional_volume_is_allowed(): void {
+        $d=$this->payload(); $d['items'][0]['harga']='100.50';
+        $this->post(route('v3.store',$this->activity->id),$d)->assertSessionHasErrors('items.0.harga');
+        $d['items'][0]['harga']='101'; $d['items'][0]['volume']='1.5'; $d['components']=[];
+        $this->post(route('v3.store',$this->activity->id),$d)->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('v3_purchases',['bruto'=>152]);
+        $this->post(route('v3.budgets.save'),['tahun'=>2026,'sumber_dana'=>'Lain','nilai'=>'1000.50'])->assertSessionHasErrors('nilai');
+    }
+    public function test_fractional_component_money_is_rejected(): void {
+        $d=$this->payload(); $d['components'][0]['nominal']='100.50';
+        $this->post(route('v3.store',$this->activity->id),$d)->assertSessionHasErrors('components.0.nominal');
+        $d['components'][0]=['label'=>'Pajak','kategori'=>'pajak','metode'=>'persentase','persentase'=>'1.5','dasar'=>'100.50','perlakuan'=>'tambah'];
+        $this->post(route('v3.store',$this->activity->id),$d)->assertSessionHasErrors('components.0.dasar');
+        $d['components'][0]['dasar']='100';
+        $this->post(route('v3.store',$this->activity->id),$d)->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('v3_components',['nominal'=>2]);
+    }
+    public function test_unchanged_save_preserves_revision_documents_and_vendor(): void {
+        $p=$this->purchase(); $this->issueAll($p);
+        $eventCount=DB::table('v3_events')->count(); $vendor=$p->vendor_id;
+        $d=$this->payload(); $d['items'][0]['harga']='190000.00'; $d['items'][0]['volume']='14.000';
+        $this->put(route('v3.update',[$this->activity->id,$p->id]),$d)->assertSessionHasNoErrors();
+        $this->assertSame(1,(int)$p->fresh()->revision);
+        $this->assertSame($vendor,$p->fresh()->vendor_id);
+        $this->assertEquals(3,Document::where('status','terbit')->count());
+        $this->assertEquals($eventCount,DB::table('v3_events')->count());
+    }
+    public function test_real_change_still_requires_reason(): void {
+        $p=$this->purchase(); $d=$this->payload(); $d['vendor_alamat']='Alamat baru';
+        $this->put(route('v3.update',[$this->activity->id,$p->id]),$d)->assertSessionHasErrors('reason');
+        $this->assertSame(1,(int)$p->fresh()->revision);
+    }
+    public function test_download_rejects_corrupt_evidence_and_missing_file(): void {
+        $p=$this->purchase(); $this->issueAll($p);
+        $f=DB::table('v3_attachments')->first();
+        $this->get(route('v3.attachment',$f->id))->assertOk();
+        Storage::disk('local')->put($f->path,'changed');
+        $this->get(route('v3.attachment',$f->id))->assertStatus(409);
+        $this->assertNotEmpty(\App\Services\LpjReadiness::missing($p));
+        Storage::disk('local')->delete($f->path);
+        $this->get(route('v3.attachment',$f->id))->assertNotFound();
+    }
+    public function test_whole_rupiah_export_format(): void {
+        $sheet=new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $cell=$sheet->getActiveSheet()->getCell('G2');
+        (new V3Export($this->writer->school_profile_id))->bindValue($cell,'100000.00');
+        $this->assertSame('#,##0',$cell->getStyle()->getNumberFormat()->getFormatCode());
+        $this->assertEquals(100000,$cell->getValue());
+    }
+
+
+    public function test_redesigned_documents_keep_recipient_left_and_inspection_truthful(): void
+    {
+        foreach (['Barang', 'Jasa'] as $category) {
+            $payload = $this->payload();
+            $payload['kategori'] = $category;
+            $payload['nomor_bukti'] = 'DESAIN-'.$category;
+            $p = app(V3Workflow::class)->save($this->activity, $payload);
+            $wf = app(V3Workflow::class);
+            $wf->issue($p->id, ['jenis'=>'nopes', 'tanggal'=>'2026-01-19']);
+            $doc = V3Workflow::current($p, 'nopes');
+            $s = DocumentAssets::hydrate($doc->snapshot, $p->school_profile_id);
+            $view = $category === 'Jasa' ? 'v3.print-service' : 'v3.print-document';
+            $html = view($view, compact('doc', 's'))->render();
+            $this->assertStringContainsString('<p class="recipient">Kepada Yth.', $html);
+            $this->assertSame(1, substr_count($html, '<img '));
+            $this->assertStringContainsString('Rp2.660.000', $html);
+            $this->assertStringNotContainsString('Rp2.660.000,00', $html);
+            $wf->issue($p->id, ['jenis'=>'bapb', 'tanggal'=>'2026-01-20', 'inspection'=>[1=>['baik'=>13, 'rusak'=>1]]]);
+            $doc = V3Workflow::current($p, 'bapb');
+            $s = DocumentAssets::hydrate($doc->snapshot, $p->school_profile_id);
+            $html = view($view, compact('doc', 's'))->render();
+            $this->assertSame(1, substr_count($html, '<table class="items'));
+            $this->assertStringContainsString('perlu ditindaklanjuti', $html);
+            $this->assertStringNotContainsString('Seluruh kuantitas pesanan tercatat', $html);
+        }
+    }
+
+    public function test_legacy_receipt_does_not_claim_confirmed_payment(): void
+    {
+        $p = $this->purchase();
+        $this->issueAll($p);
+        $doc = V3Workflow::current($p, 'kuitansi');
+        $s = DocumentAssets::hydrate($doc->snapshot, $p->school_profile_id);
+        unset($s['payment_confirmed']);
+        $html = view('v3.print-document', compact('doc', 's'))->render();
+        $this->assertStringContainsString('Konfirmasi pembayaran belum tercatat', $html);
+        $this->assertStringNotContainsString('LUNAS BAYAR:', $html);
+        $this->assertStringContainsString('Total komponen tercatat', $html);
+        $this->assertStringNotContainsString('Total rincian pajak', $html);
+    }
+
+    public function test_short_activity_documents_fit_three_a4_pages(): void
+    {
+        $p = $this->purchase();
+        $this->issueAll($p);
+        $documents = collect(['nopes', 'bapb', 'kuitansi'])->map(fn ($kind) => V3Workflow::current($p, $kind));
+        $pdf = app('dompdf.wrapper')->loadView('v3.print-activity', ['a'=>$this->activity, 'documents'=>$documents])->setPaper('a4');
+        $pdf->output();
+        $this->assertSame(3, $pdf->getDomPDF()->getCanvas()->get_page_count());
+    }
 }

@@ -66,7 +66,7 @@
 </label>
 <label>Sumber dana<input name="sumber_dana" value="{{ old('sumber_dana','BOS') }}" required maxlength="100">
 </label>
-<label>Nilai anggaran (Rp)<input type="number" data-rupiah min="0" max="99999999999999" step="0.01" name="nilai" value="{{ old('nilai') }}" required>
+<label>Nilai anggaran (Rp)<input type="number" data-rupiah min="0" max="99999999999999" step="1" name="nilai" value="{{ old('nilai') }}" required>
 </label>
 </div>
 <div class="actions">
